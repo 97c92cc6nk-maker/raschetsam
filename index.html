@@ -995,6 +995,7 @@
     let currentUser = null;
     let currentAccess = null;
     let accessUsers = [];
+    let cloudSchemaError = "";
     let cloudSaveTimer = 0;
     let lastCloudSync = "";
 
@@ -1197,7 +1198,10 @@
           if (currentUser && event !== "INITIAL_SESSION") {
             void refreshAccessAndLoad();
           }
-          if (!currentUser) updateSaveState("Сохранено в браузере");
+          if (!currentUser) {
+            cloudSchemaError = "";
+            updateSaveState("Сохранено в браузере");
+          }
         });
       } catch (error) {
         addLog("Не удалось подключить облачную синхронизацию: " + error.message, "error");
@@ -1216,7 +1220,7 @@
     function normalizeAccess(row) {
       const sections = Array.isArray(row?.sections) ? row.sections.filter((section) => allAccessSectionIds().includes(section)) : [];
       const email = normalizeEmail(row?.email || currentUser?.email);
-      const isBootstrapAdmin = email === ADMIN_EMAIL && row?.is_admin === true;
+      const isBootstrapAdmin = email === ADMIN_EMAIL;
       const isAdmin = Boolean(row?.is_admin || isBootstrapAdmin);
       return {
         userId: row?.user_id || currentUser?.id || "",
@@ -1302,11 +1306,13 @@
           .eq("user_id", currentUser.id)
           .maybeSingle();
         if (error) throw error;
+        cloudSchemaError = "";
         currentAccess = normalizeAccess(data || { user_id: currentUser.id, email: currentUser.email, is_admin: false, sections: [] });
         if (isAccessAdmin()) await loadAccessUsers();
         renderAuthPanel();
         return true;
       } catch (error) {
+        cloudSchemaError = error.message;
         currentAccess = normalizeAccess({ user_id: currentUser.id, email: currentUser.email, is_admin: false, sections: [] });
         addLog("Не удалось загрузить права доступа: " + error.message, "error");
         updateSaveState("Ошибка прав доступа");
@@ -1328,7 +1334,8 @@
       } catch (error) {
         addLog("Не удалось загрузить список пользователей: " + error.message, "error");
         showToast("Список пользователей недоступен");
-        accessUsers = [];
+        cloudSchemaError = error.message;
+        accessUsers = currentAccess ? [currentAccess] : [];
         return [];
       }
     }
@@ -1404,6 +1411,7 @@
           <div>
             <div class="auth-title"><span class="cloud-dot synced"></span>Вход выполнен: ${escapeHtml(currentUser.email || "пользователь")}${isAccessAdmin() ? " · администратор" : ""}</div>
             <div class="auth-help">Данные синхронизируются между устройствами. ${lastCloudSync ? `Последняя синхронизация: ${escapeHtml(lastCloudSync)}.` : "После правок сохранение идет автоматически."}</div>
+            ${cloudSchemaError ? `<div class="access-note">Supabase еще не готов: выполните актуальный файл supabase-schema.sql в SQL Editor. Ошибка: ${escapeHtml(cloudSchemaError)}</div>` : ""}
           </div>
           <div class="auth-actions">
             <button type="button" data-action="load-cloud">Загрузить из облака</button>
@@ -1561,10 +1569,11 @@
         renderAuthPanel();
         return true;
       } catch (error) {
+        cloudSchemaError = error.message;
         addLog("Не удалось загрузить данные из облака: " + error.message, "error");
         updateSaveState("Ошибка загрузки из облака");
         showToast("Облако недоступно");
-        renderAuthPanel();
+        renderApp();
         return false;
       }
     }
@@ -1612,6 +1621,7 @@
         .from(CLOUD_TABLE)
         .upsert(payload, { onConflict: "workspace_key" });
       if (error) throw error;
+      cloudSchemaError = "";
       lastCloudSync = formatSyncTime(now);
       updateSaveState("Синхронизировано: " + lastCloudSync);
       renderAuthPanel();
@@ -2323,7 +2333,9 @@
         document.getElementById("panel").innerHTML = `<div class="empty">Нет прав администратора</div>`;
         return;
       }
-      const body = accessUsers.map((user) => {
+      const users = [...accessUsers];
+      if (currentAccess && !users.some((user) => user.userId === currentAccess.userId)) users.unshift(currentAccess);
+      const body = users.map((user) => {
         const sections = new Set(user.sections);
         const accessChecks = ACCESS_SECTIONS.map((section) => `
           <label class="access-check" title="${escapeHtml(section.description)}">
@@ -2355,6 +2367,7 @@
             <button type="button" data-action="refresh-access">Обновить список</button>
           </div>
         </div>
+        ${cloudSchemaError ? `<div class="access-note">Supabase еще не готов: выполните актуальный файл supabase-schema.sql в SQL Editor, затем нажмите «Обновить список». Ошибка: ${escapeHtml(cloudSchemaError)}</div>` : ""}
         <div class="legal-note">Администратор может выдавать доступ только зарегистрированным пользователям. Пользователь ${escapeHtml(ADMIN_EMAIL)} назначается администратором через SQL-схему Supabase.</div>
         <div class="admin-user-list">${body || `<div class="empty">Пользователи пока не найдены</div>`}</div>
       `;
