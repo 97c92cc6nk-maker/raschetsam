@@ -1410,12 +1410,11 @@
         panel.innerHTML = `
           <div>
             <div class="auth-title"><span class="cloud-dot synced"></span>Вход выполнен: ${escapeHtml(currentUser.email || "пользователь")}${isAccessAdmin() ? " · администратор" : ""}</div>
-            <div class="auth-help">Данные синхронизируются между устройствами. ${lastCloudSync ? `Последняя синхронизация: ${escapeHtml(lastCloudSync)}.` : "После правок сохранение идет автоматически."}</div>
-            ${cloudSchemaError ? `<div class="access-note">Supabase еще не готов: выполните актуальный файл supabase-schema.sql в SQL Editor. Ошибка: ${escapeHtml(cloudSchemaError)}</div>` : ""}
+            <div class="auth-help">${cloudSchemaError ? "Локальный режим: изменения пока сохраняются в этом браузере. Подробности настройки доступны в разделе «Доступ»." : `Данные синхронизируются между устройствами. ${lastCloudSync ? `Последняя синхронизация: ${escapeHtml(lastCloudSync)}.` : "После правок сохранение идет автоматически."}`}</div>
           </div>
           <div class="auth-actions">
-            <button type="button" data-action="load-cloud">Загрузить из облака</button>
-            <button type="button" class="primary" data-action="sync-now">Сохранить в облако</button>
+            <button type="button" data-action="load-cloud" ${cloudSchemaError ? "disabled" : ""}>Загрузить из облака</button>
+            <button type="button" class="primary" data-action="sync-now" ${cloudSchemaError ? "disabled" : ""}>Сохранить в облако</button>
             <button type="button" data-action="sign-out">Выйти</button>
           </div>
         `;
