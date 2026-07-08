@@ -1,0 +1,3091 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Смены и выплаты</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-2: #eef4f6;
+      --text: #17202a;
+      --muted: #617080;
+      --line: #d9e0e7;
+      --teal: #0f766e;
+      --teal-soft: #d9f3ef;
+      --blue: #2563eb;
+      --amber: #b45309;
+      --amber-soft: #fff1d6;
+      --red: #b42318;
+      --red-soft: #fee4e2;
+      --green: #287d3c;
+      --shadow: 0 16px 40px rgba(23, 32, 42, 0.08);
+      --radius: 8px;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      min-width: 320px;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      min-height: 36px;
+      padding: 0 12px;
+      transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+    }
+
+    button:hover {
+      border-color: #aab6c2;
+      background: #f8fafc;
+    }
+
+    button.primary {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+
+    button.primary:hover {
+      background: #0b5f59;
+      border-color: #0b5f59;
+    }
+
+    button.danger {
+      color: var(--red);
+      border-color: #f2b8b5;
+    }
+
+    button.icon {
+      width: 34px;
+      height: 34px;
+      min-height: 34px;
+      padding: 0;
+      display: inline-grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-width: 90px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      min-height: 34px;
+      padding: 5px 8px;
+    }
+
+    input:focus,
+    select:focus,
+    button:focus-visible {
+      outline: 2px solid rgba(37, 99, 235, 0.26);
+      outline-offset: 1px;
+      border-color: var(--blue);
+    }
+
+    .app {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 38px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+
+    .auth-panel {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .auth-panel.offline {
+      border-color: #f2d28b;
+      background: #fff9ea;
+    }
+
+    .auth-title {
+      font-weight: 800;
+      color: #263343;
+    }
+
+    .auth-help {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .auth-form {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.8fr) auto auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .auth-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .cloud-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: var(--amber);
+      vertical-align: middle;
+    }
+
+    .cloud-dot.synced {
+      background: var(--green);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+      min-height: 84px;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric-value {
+      margin-top: 8px;
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .metric-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: minmax(160px, 220px) minmax(160px, 220px) minmax(220px, 280px) 1fr;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+
+    .field label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+
+    .tab {
+      border: 0;
+      border-radius: 7px 7px 0 0;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      min-height: 40px;
+      color: var(--muted);
+      padding: 0 14px;
+    }
+
+    .tab.active {
+      color: var(--teal);
+      background: var(--surface);
+      border-bottom-color: var(--teal);
+      font-weight: 700;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .panel-title {
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .panel-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: calc(100vh - 290px);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #eef3f7;
+      color: #314052;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .sort-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      width: 100%;
+      min-height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+      font-weight: 800;
+      text-transform: inherit;
+      letter-spacing: inherit;
+    }
+
+    .sort-button:hover {
+      background: transparent;
+      color: var(--teal);
+    }
+
+    .sort-indicator {
+      color: var(--teal);
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    tr:hover td {
+      background: #fbfdff;
+    }
+
+    tr.has-issue td {
+      background: #fff8f7;
+    }
+
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .amount {
+      font-weight: 800;
+      color: #1d4b3a;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.ok {
+      color: var(--green);
+      background: #e5f5e8;
+    }
+
+    .badge.warn {
+      color: var(--amber);
+      background: var(--amber-soft);
+    }
+
+    .badge.error {
+      color: var(--red);
+      background: var(--red-soft);
+    }
+
+    .badge.info {
+      color: var(--blue);
+      background: #e7efff;
+    }
+
+    .payment-select {
+      min-width: 132px;
+      font-weight: 800;
+      border-width: 2px;
+    }
+
+    .payment-select.status-paid {
+      color: var(--green);
+      border-color: #9fd6aa;
+      background: #e5f5e8;
+    }
+
+    .payment-select.status-unpaid {
+      color: var(--red);
+      border-color: #f2b8b5;
+      background: var(--red-soft);
+    }
+
+    .payment-select.status-not-due {
+      color: var(--amber);
+      border-color: #f6d58c;
+      background: var(--amber-soft);
+    }
+
+    .empty {
+      padding: 26px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: 180px 140px 1fr;
+      gap: 0;
+    }
+
+    .checks > div {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .checks .head {
+      background: #eef3f7;
+      color: #314052;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 800;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(260px, 1fr));
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .detail-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 12px;
+    }
+
+    .detail-card h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+    }
+
+    .detail-fields {
+      display: grid;
+      gap: 8px;
+    }
+
+    .detail-fields label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .detail-fields input,
+    .detail-fields textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      min-height: 34px;
+      padding: 6px 8px;
+      color: var(--text);
+      resize: vertical;
+    }
+
+    .contract-fields {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 8px;
+    }
+
+    .contract-fields h4 {
+      margin: 0;
+      font-size: 13px;
+      color: #314052;
+    }
+
+    .contract-row {
+      display: grid;
+      grid-template-columns: 72px minmax(90px, 1fr) minmax(130px, 1fr);
+      gap: 8px;
+      align-items: end;
+    }
+
+    .contract-row strong {
+      padding-bottom: 9px;
+      font-size: 13px;
+    }
+
+    .docs-list {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .doc-row {
+      display: grid;
+      grid-template-columns: minmax(150px, 1.15fr) minmax(90px, 0.8fr) minmax(70px, 0.55fr) minmax(84px, 0.65fr) minmax(100px, 0.75fr) minmax(300px, 1.5fr);
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fff;
+    }
+
+    .doc-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .doc-actions button {
+      min-width: 86px;
+    }
+
+    .legal-note {
+      padding: 10px 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      background: #fbfcfd;
+      font-size: 13px;
+    }
+
+    .log-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      max-height: calc(100vh - 290px);
+      overflow: auto;
+    }
+
+    .log-list li {
+      display: grid;
+      grid-template-columns: 170px 100px 1fr;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: 155px 1fr 110px;
+      gap: 10px;
+      align-items: center;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .bar {
+      height: 12px;
+      background: #e6edf3;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), #4f46e5);
+      border-radius: inherit;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      max-width: min(420px, calc(100vw - 36px));
+      background: #17202a;
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .col-action {
+      width: 52px;
+    }
+
+    .col-date {
+      width: 142px;
+    }
+
+    .col-day {
+      width: 130px;
+    }
+
+    .col-name,
+    .col-company {
+      width: 128px;
+    }
+
+    .col-hours,
+    .col-rate {
+      width: 100px;
+    }
+
+    .col-amount,
+    .col-week-sum {
+      width: 135px;
+    }
+
+    .col-week {
+      width: 190px;
+    }
+
+    @media (max-width: 920px) {
+      .topbar {
+        display: block;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+        margin-top: 12px;
+      }
+
+  
+    .auth-panel {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .auth-panel.offline {
+      border-color: #f2d28b;
+      background: #fff9ea;
+    }
+
+    .auth-title {
+      font-weight: 800;
+      color: #263343;
+    }
+
+    .auth-help {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .auth-form {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.8fr) auto auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .auth-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .cloud-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: var(--amber);
+      vertical-align: middle;
+    }
+
+    .cloud-dot.synced {
+      background: var(--green);
+    }
+
+    .metrics {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+      }
+
+      .filters {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .auth-panel,
+      .auth-form {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-actions {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app {
+        padding: 12px;
+      }
+
+      .metrics,
+      .filters {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head {
+        display: block;
+      }
+
+      .panel-actions {
+        justify-content: flex-start;
+        margin-top: 10px;
+      }
+
+      .checks {
+        grid-template-columns: 1fr;
+      }
+
+      .checks .head {
+        display: none;
+      }
+
+      .log-list li,
+      .chart-row,
+      .doc-row {
+        grid-template-columns: 1fr;
+      }
+
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .toolbar,
+      .auth-panel,
+      .filters,
+      .tabs,
+      .panel-actions,
+      .toast,
+      .col-action {
+        display: none !important;
+      }
+
+      .app {
+        max-width: none;
+        padding: 0;
+      }
+
+      .panel,
+      .metric {
+        box-shadow: none;
+      }
+
+      .table-wrap,
+      .log-list {
+        max-height: none;
+        overflow: visible;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <h1>Смены и выплаты</h1>
+        <div class="subtitle">Июнь, июль, август 2026</div>
+      </div>
+      <div class="toolbar" aria-label="Действия">
+        <button type="button" class="primary" data-action="add-row">Добавить смену</button>
+        <button type="button" data-action="export-csv">Экспорт CSV</button>
+        <button type="button" data-action="print">Печать</button>
+        <button type="button" class="danger" data-action="reset">Сброс</button>
+      </div>
+    </header>
+
+    <section id="authPanel" class="auth-panel" aria-label="Вход и синхронизация"></section>
+
+    <section id="metrics" class="metrics" aria-label="Итоги"></section>
+
+    <section class="filters" aria-label="Фильтры">
+      <div class="field">
+        <label for="employeeFilter">ФИО</label>
+        <select id="employeeFilter"></select>
+      </div>
+      <div class="field">
+        <label for="companyFilter">Компания</label>
+        <select id="companyFilter"></select>
+      </div>
+      <div class="field">
+        <label for="weekFilter">Неделя</label>
+        <select id="weekFilter"></select>
+      </div>
+      <div class="field">
+        <label for="saveState">Состояние</label>
+        <input id="saveState" type="text" readonly value="">
+      </div>
+    </section>
+
+    <nav id="tabs" class="tabs" aria-label="Вкладки"></nav>
+    <main id="panel" class="panel"></main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = "https://mpsopvezhguzkkhvjnwy.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_w8RqhkEDNm1iXYVlqRzZNw_M0Vr04mE";
+    const CLOUD_TABLE = "app_states";
+    const CLOUD_STATE_KEY = "main";
+    const START_DATE = "2026-06-01";
+    const END_DATE = "2026-08-31";
+    const CONTRACT_YEAR = "2026";
+    const CONTRACT_END_DATE = "2026-12-31";
+    const STORAGE_KEY = "self-employed-shifts-jja-2026-v4";
+    const EMPLOYEES = ["Денис", "Софья", "Асет"];
+    const COMPANIES = ["ЛЕА", "ОИА", "КАА"];
+    const COMPANY_DOCUMENT_SERIES = { "ЛЕА": "11", "ОИА": "22", "КАА": "33" };
+    const RATES = { "ЛЕА": 420, "ОИА": 400, "КАА": 500 };
+    const EMPLOYEE_COMPANIES = {
+      "Денис": ["ЛЕА", "ОИА"],
+      "Софья": ["ЛЕА", "КАА"],
+      "Асет": ["КАА", "ОИА"]
+    };
+    const EMPLOYEE_START_DATES = {
+      "Денис": "2026-06-05",
+      "Софья": "2026-06-17",
+      "Асет": "2026-06-25"
+    };
+    const DEFAULT_COMPANY_DETAILS = {
+      "ЛЕА": {
+        alias: "ЛЕА",
+        legalName: "Индивидуальный предприниматель Лунева Елизавета Анатольевна",
+        shortName: "ИП Лунева Елизавета Анатольевна",
+        inn: "502421116640",
+        ogrn: "324508100452858",
+        address: "143441, Московская обл, г Красногорск, пгт. Путилково, д. 16Г",
+        postalAddress: "143441, Московская обл, г Красногорск, пгт. Путилково, д. 16Г",
+        actualAddress: "143441, Московская обл, г Красногорск, пгт. Путилково, д. 16Г",
+        bank: "ПАО Сбербанк",
+        account: "40802810240000482217",
+        corrAccount: "30101810400000000225",
+        bik: "044525225",
+        okpo: "2034848187",
+        okato: "46439000156",
+        oktmo: "46744000256",
+        email: "lunevaozon@mail.ru",
+        phone: "89268490108",
+        bankInn: "7707083893",
+        bankKpp: "773601001",
+        signatory: "Лунева Елизавета Анатольевна",
+        basis: "ОГРНИП",
+        serviceName: "операционная поддержка пункта выдачи заказов (ПВЗ)",
+        source: "PDF: Карточка ИП Лунева_edited.pdf, распознано локальным Windows OCR"
+      },
+      "ОИА": {
+        alias: "ОИА",
+        legalName: "Индивидуальный предприниматель Овчарова Ирина Александровна",
+        shortName: "ИП Овчарова Ирина Александровна",
+        inn: "860704058381",
+        ogrn: "324508100581373",
+        address: "Московская обл, г Красногорск, деревня Путилково, Спасо-Тушинский б-р, д 8, кв 350",
+        postalAddress: "Московская обл, г Красногорск, деревня Путилково, Спасо-Тушинский б-р, д 8, кв 350",
+        actualAddress: "Московская обл, г Красногорск, деревня Путилково, Спасо-Тушинский б-р, д 8, кв 350",
+        bank: "ПАО Сбербанк",
+        account: "40802810040000497693",
+        corrAccount: "30101810400000000225",
+        bik: "044525225",
+        okpo: "2036524613",
+        okato: "46439000156",
+        oktmo: "46744000256",
+        email: "irina1972www@mail.ru",
+        phone: "89011803966",
+        bankInn: "7707083893",
+        bankKpp: "773601001",
+        signatory: "Овчарова Ирина Александровна",
+        basis: "ОГРНИП",
+        serviceName: "операционная поддержка пункта выдачи заказов (ПВЗ)",
+        source: "PDF: Карточка ОИА.pdf, текст извлечен из встроенных PDF-шрифтов"
+      },
+      "КАА": {
+        alias: "КАА",
+        legalName: "Индивидуальный предприниматель Кислянская Анна Андреевна",
+        shortName: "ИП Кислянская Анна Андреевна",
+        inn: "434548598200",
+        ogrn: "325774600902195",
+        address: "117624, г. Москва, уд. Поляны, д. 5, кв. 1540",
+        postalAddress: "117624, г. Москва, уд. Поляны, д. 5, кв. 1540",
+        actualAddress: "117624, г. Москва, уд. Поляны, д. 5, кв. 1540",
+        bank: "ООО \"ОЗОН Банк\"",
+        account: "40802810100001775572",
+        corrAccount: "30101810645374525068",
+        bik: "044525068",
+        email: "annakislyanskaya007@mail.ru",
+        phone: "89771709955",
+        signatory: "Кислянская Анна Андреевна",
+        basis: "ОГРНИП",
+        serviceName: "операционная поддержка пункта выдачи заказов (ПВЗ)",
+        source: "DOCX: Реквизиты Кислянская.docx"
+      }
+    };
+    const DEFAULT_EMPLOYEE_DETAILS = {
+      "Денис": {
+        shortName: "Денис",
+        fullName: "Галах Денис Михайлович",
+        birthDate: "1985-03-16",
+        gender: "Мужской",
+        citizenship: "РБ",
+        inn: "502426147497",
+        snils: "227-431-642 53",
+        bank: "Филиал №7701 Банка ВТБ",
+        account: "40820810690009143221",
+        corrAccount: "30101810345250000745",
+        bik: "044525745",
+        passport: "P BLR MP2863171",
+        passportIssuer: "Московское РУВД г. Минска",
+        passportDate: "2011-03-12",
+        address: "пгт. Путилково, д. 15А",
+        taxStatus: "Налогоплательщик налога на профессиональный доход",
+        source: "Excel: сотрудл.xlsx"
+      },
+      "Софья": {
+        shortName: "Софья",
+        fullName: "Афанасьева Софья Алексеевна",
+        birthDate: "1995-08-21",
+        gender: "Женский",
+        citizenship: "РФ",
+        inn: "623401011283",
+        snils: "178-508-747 17",
+        bank: "Филиал №7701 Банка ВТБ",
+        account: "40817810809256050709",
+        corrAccount: "30101810345250000745",
+        bik: "044525745",
+        passport: "45 21 436946",
+        passportIssuer: "ГУ МВД РОССИИ ПО Г. МОСКВЕ",
+        passportDate: "2021-08-24",
+        address: "г.Москва, вн. тер. г. Муниципальный округ Хорошево-Мневники, ул. Нижние мневники, д. 16К5, кв.142",
+        taxStatus: "Налогоплательщик налога на профессиональный доход",
+        source: "Excel: сотрудл.xlsx"
+      },
+      "Асет": {
+        shortName: "Асет",
+        fullName: "Куандыков Асет Муратович",
+        birthDate: "1980-11-22",
+        gender: "Мужской",
+        citizenship: "РФ",
+        inn: "770101707921",
+        snils: "031-137-818 13",
+        bank: "ПАО Сбербанк",
+        account: "40817810738174874180",
+        corrAccount: "30101810400000000225",
+        bik: "044525225",
+        passport: "4525 475829",
+        passportIssuer: "ГУ МВД РОССИИ ПО ГОР. МОСКВЕ",
+        passportDate: "2025-12-24",
+        address: "г.Москва, ул. Озерная, д.1, кв. 2",
+        taxStatus: "Налогоплательщик налога на профессиональный доход",
+        source: "Excel: сотрудл.xlsx"
+      }
+    };
+    const MONTHS = [
+      { id: "2026-06", title: "Июнь 2026" },
+      { id: "2026-07", title: "Июль 2026" },
+      { id: "2026-08", title: "Август 2026" }
+    ];
+    const TABS = [
+      ...MONTHS,
+      { id: "summary", title: "Свод по неделям" },
+      { id: "requisites", title: "Реквизиты" },
+      { id: "documents", title: "Документы" },
+      { id: "checks", title: "Проверка" },
+      { id: "log", title: "Лог" }
+    ];
+    const WEEK_STARTS = [
+      "2026-06-01", "2026-06-08", "2026-06-15", "2026-06-22", "2026-06-29",
+      "2026-07-06", "2026-07-13", "2026-07-20", "2026-07-27",
+      "2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"
+    ];
+    const PAYMENT_STATUSES = {
+      paid: { label: "оплачено", className: "status-paid" },
+      unpaid: { label: "не оплачено", className: "status-unpaid" },
+      not_due: { label: "срок не подошел", className: "status-not-due" }
+    };
+    const FULL_WEEK_STARTS = WEEK_STARTS.filter((weekStart) => isFullWeek(weekStart));
+    const currency = new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 });
+    const numberFormat = new Intl.NumberFormat("ru-RU");
+    const dayFormat = new Intl.DateTimeFormat("ru-RU", { weekday: "long", timeZone: "UTC" });
+    const dateFormat = new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+
+    let state = loadState();
+    let ui = { activeTab: "2026-06", employee: "all", company: "all", week: "all", summarySort: { field: "week", direction: "asc" } };
+    let toastTimer = 0;
+    let renderQueued = false;
+    let supabaseClient = createSupabaseClient();
+    let currentUser = null;
+    let cloudSaveTimer = 0;
+    let lastCloudSync = "";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupStaticControls();
+      renderApp();
+      renderAuthPanel();
+      addLog("Приложение открыто", "info");
+      persistState();
+      void initializeCloudAuth();
+    });
+
+    document.addEventListener("click", (event) => {
+      const tabButton = event.target.closest("[data-tab]");
+      if (tabButton) {
+        ui.activeTab = tabButton.dataset.tab;
+        renderApp();
+        return;
+      }
+
+      const summarySortButton = event.target.closest("[data-summary-sort]");
+      if (summarySortButton) {
+        setSummarySort(summarySortButton.dataset.summarySort);
+        return;
+      }
+
+      const action = event.target.closest("[data-action]")?.dataset.action;
+      if (!action) return;
+
+      if (action === "sign-in") {
+        void signInWithEmail();
+        return;
+      }
+      if (action === "sign-up") {
+        void signUpWithEmail();
+        return;
+      }
+      if (action === "sign-out") {
+        void signOutCloud();
+        return;
+      }
+      if (action === "sync-now") {
+        void saveCloudState({ showSuccess: true });
+        return;
+      }
+      if (action === "load-cloud") {
+        void loadCloudState({ showSuccess: true });
+        return;
+      }
+
+      if (action === "add-row") addShift();
+      if (action === "delete-row") deleteShift(event.target.closest("[data-id]")?.dataset.id);
+      if (action === "export-csv") exportCsv();
+      if (action === "export-doc") exportDocument(event.target.closest("[data-doc]")?.dataset);
+      if (action === "print") {
+        addLog("Открыта печать", "info");
+        window.print();
+      }
+      if (action === "reset") resetData();
+    });
+
+    document.addEventListener("input", (event) => {
+      const contractField = event.target.dataset.contractField;
+      if (contractField) {
+        const savedValue = updateEmployeeContract(event.target.dataset.contractEmployee, event.target.dataset.contractCompany, contractField, event.target.value);
+        if (savedValue !== undefined) event.target.value = savedValue;
+        return;
+      }
+
+      const requisiteField = event.target.dataset.requisiteField;
+      if (requisiteField) {
+        updateRequisite(event.target.dataset.requisiteType, event.target.dataset.requisiteKey, requisiteField, event.target.value);
+        return;
+      }
+
+      const field = event.target.dataset.field;
+      const rowId = event.target.closest("[data-id]")?.dataset.id;
+      if (!field || !rowId) return;
+      updateShift(rowId, field, event.target.value, false);
+      refreshVisibleComputations();
+    });
+
+    document.addEventListener("change", (event) => {
+      if (event.target.id === "employeeFilter") {
+        ui.employee = event.target.value;
+        renderApp();
+        return;
+      }
+      if (event.target.id === "companyFilter") {
+        ui.company = event.target.value;
+        renderApp();
+        return;
+      }
+      if (event.target.id === "weekFilter") {
+        ui.week = event.target.value;
+        renderApp();
+        return;
+      }
+      const contractField = event.target.dataset.contractField;
+      if (contractField) {
+        const savedValue = updateEmployeeContract(event.target.dataset.contractEmployee, event.target.dataset.contractCompany, contractField, event.target.value);
+        if (savedValue !== undefined) event.target.value = savedValue;
+        return;
+      }
+      const paymentKey = event.target.dataset.paymentKey;
+      if (paymentKey) {
+        updatePaymentStatus(paymentKey, event.target.value);
+        return;
+      }
+
+      const field = event.target.dataset.field;
+      const rowId = event.target.closest("[data-id]")?.dataset.id;
+      if (!field || !rowId) return;
+      updateShift(rowId, field, event.target.value, true);
+      renderApp();
+    });
+
+
+    function createSupabaseClient() {
+      try {
+        if (!window.supabase?.createClient) return null;
+        return window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+          }
+        });
+      } catch (error) {
+        console.warn("Supabase недоступен", error);
+        return null;
+      }
+    }
+
+    async function initializeCloudAuth() {
+      renderAuthPanel();
+      if (!supabaseClient) {
+        updateSaveState("Облако недоступно, сохранено в браузере");
+        addLog("Supabase не загрузился: работаем только локально", "warning", true);
+        return;
+      }
+      try {
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        currentUser = data.session?.user || null;
+        renderAuthPanel();
+        if (currentUser) await loadCloudState();
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+          currentUser = session?.user || null;
+          renderAuthPanel();
+          if (currentUser && event !== "INITIAL_SESSION") {
+            void loadCloudState();
+          }
+          if (!currentUser) updateSaveState("Сохранено в браузере");
+        });
+      } catch (error) {
+        addLog("Не удалось подключить облачную синхронизацию: " + error.message, "error");
+        updateSaveState("Ошибка облачной синхронизации");
+      }
+    }
+
+    function renderAuthPanel() {
+      const panel = document.getElementById("authPanel");
+      if (!panel) return;
+      if (!supabaseClient) {
+        panel.className = "auth-panel offline";
+        panel.innerHTML = `
+          <div>
+            <div class="auth-title"><span class="cloud-dot"></span>Локальный режим</div>
+            <div class="auth-help">Supabase не загрузился. Данные сохраняются только в этом браузере.</div>
+          </div>
+          <div class="auth-actions"><button type="button" data-action="sync-now" disabled>Синхронизация недоступна</button></div>
+        `;
+        return;
+      }
+      panel.className = "auth-panel";
+      if (currentUser) {
+        panel.innerHTML = `
+          <div>
+            <div class="auth-title"><span class="cloud-dot synced"></span>Вход выполнен: ${escapeHtml(currentUser.email || "пользователь")}</div>
+            <div class="auth-help">Данные синхронизируются между устройствами. ${lastCloudSync ? `Последняя синхронизация: ${escapeHtml(lastCloudSync)}.` : "После правок сохранение идет автоматически."}</div>
+          </div>
+          <div class="auth-actions">
+            <button type="button" data-action="load-cloud">Загрузить из облака</button>
+            <button type="button" class="primary" data-action="sync-now">Сохранить в облако</button>
+            <button type="button" data-action="sign-out">Выйти</button>
+          </div>
+        `;
+        return;
+      }
+      panel.innerHTML = `
+        <div>
+          <div class="auth-title"><span class="cloud-dot"></span>Вход для синхронизации</div>
+          <div class="auth-help">Войдите, чтобы видеть одни и те же смены, реквизиты и статусы оплат на разных устройствах.</div>
+        </div>
+        <div class="auth-form">
+          <label class="field">Email<input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com"></label>
+          <label class="field">Пароль<input id="authPassword" type="password" autocomplete="current-password" placeholder="минимум 6 символов"></label>
+          <button type="button" class="primary" data-action="sign-in">Войти</button>
+          <button type="button" data-action="sign-up">Регистрация</button>
+        </div>
+      `;
+    }
+
+    function getAuthCredentials() {
+      const email = document.getElementById("authEmail")?.value.trim() || "";
+      const password = document.getElementById("authPassword")?.value || "";
+      if (!email || !password) {
+        showToast("Введите email и пароль");
+        return null;
+      }
+      return { email, password };
+    }
+
+    async function signInWithEmail() {
+      if (!supabaseClient) return;
+      const credentials = getAuthCredentials();
+      if (!credentials) return;
+      try {
+        updateSaveState("Выполняется вход...");
+        const { data, error } = await supabaseClient.auth.signInWithPassword(credentials);
+        if (error) throw error;
+        currentUser = data.user;
+        addLog("Выполнен вход в облачную синхронизацию", "info");
+        await loadCloudState();
+        showToast("Вход выполнен");
+      } catch (error) {
+        addLog("Ошибка входа: " + error.message, "error");
+        showToast("Не удалось войти");
+        updateSaveState("Ошибка входа");
+      } finally {
+        renderAuthPanel();
+      }
+    }
+
+    async function signUpWithEmail() {
+      if (!supabaseClient) return;
+      const credentials = getAuthCredentials();
+      if (!credentials) return;
+      try {
+        updateSaveState("Создается пользователь...");
+        const { data, error } = await supabaseClient.auth.signUp(credentials);
+        if (error) throw error;
+        currentUser = data.session?.user || null;
+        addLog("Создан пользователь для облачной синхронизации", "info");
+        if (currentUser) await saveCloudState({ showSuccess: true });
+        showToast(currentUser ? "Регистрация выполнена" : "Проверьте email для подтверждения");
+      } catch (error) {
+        addLog("Ошибка регистрации: " + error.message, "error");
+        showToast("Не удалось зарегистрироваться");
+        updateSaveState("Ошибка регистрации");
+      } finally {
+        renderAuthPanel();
+      }
+    }
+
+    async function signOutCloud() {
+      if (!supabaseClient) return;
+      try {
+        await saveCloudState();
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+        currentUser = null;
+        lastCloudSync = "";
+        addLog("Выход из облачной синхронизации", "info");
+        updateSaveState("Сохранено в браузере");
+        showToast("Вы вышли из аккаунта");
+      } catch (error) {
+        addLog("Ошибка выхода: " + error.message, "error");
+        showToast("Не удалось выйти");
+      } finally {
+        renderAuthPanel();
+      }
+    }
+
+    async function loadCloudState(options = {}) {
+      if (!supabaseClient || !currentUser) return false;
+      try {
+        updateSaveState("Загрузка из облака...");
+        const { data, error } = await supabaseClient
+          .from(CLOUD_TABLE)
+          .select("data, updated_at")
+          .eq("user_id", currentUser.id)
+          .eq("state_key", CLOUD_STATE_KEY)
+          .maybeSingle();
+        if (error) throw error;
+        if (data?.data) {
+          state = normalizeState(data.data);
+          addLog("Данные загружены из облака", "info", true);
+          saveStateLocalOnly();
+          lastCloudSync = formatSyncTime(data.updated_at);
+          renderApp();
+          if (options.showSuccess) showToast("Данные загружены из облака");
+        } else {
+          await saveCloudState({ showSuccess: false });
+          addLog("Создана первая облачная копия данных", "info");
+          if (options.showSuccess) showToast("Облачная копия создана");
+        }
+        updateSaveState(lastCloudSync ? "Синхронизировано: " + lastCloudSync : "Синхронизировано");
+        renderAuthPanel();
+        return true;
+      } catch (error) {
+        addLog("Не удалось загрузить данные из облака: " + error.message, "error");
+        updateSaveState("Ошибка загрузки из облака");
+        showToast("Облако недоступно");
+        renderAuthPanel();
+        return false;
+      }
+    }
+
+    function scheduleCloudSave() {
+      if (!supabaseClient || !currentUser) return;
+      window.clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = window.setTimeout(() => {
+        void saveCloudState().catch((error) => {
+          addLog("Не удалось сохранить в облако: " + error.message, "error");
+          updateSaveState("Ошибка сохранения в облако");
+        });
+      }, 900);
+    }
+
+    async function saveCloudState(options = {}) {
+      if (!supabaseClient || !currentUser) return false;
+      const now = new Date().toISOString();
+      const payload = {
+        user_id: currentUser.id,
+        state_key: CLOUD_STATE_KEY,
+        data: state,
+        updated_at: now
+      };
+      const { error } = await supabaseClient
+        .from(CLOUD_TABLE)
+        .upsert(payload, { onConflict: "user_id,state_key" });
+      if (error) throw error;
+      lastCloudSync = formatSyncTime(now);
+      updateSaveState("Синхронизировано: " + lastCloudSync);
+      renderAuthPanel();
+      if (options.showSuccess) showToast("Сохранено в облако");
+      return true;
+    }
+
+    function saveStateLocalOnly() {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        updateSaveState("Локальное сохранение недоступно");
+      }
+    }
+
+    function formatSyncTime(value) {
+      const date = value ? new Date(value) : new Date();
+      if (Number.isNaN(date.getTime())) return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+      return date.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function setupStaticControls() {
+      const employeeFilter = document.getElementById("employeeFilter");
+      const companyFilter = document.getElementById("companyFilter");
+      const weekFilter = document.getElementById("weekFilter");
+      employeeFilter.innerHTML = `<option value="all">Все сотрудники</option>${EMPLOYEES.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")}`;
+      companyFilter.innerHTML = `<option value="all">Все компании</option>${COMPANIES.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")}`;
+      weekFilter.innerHTML = `<option value="all">Все недели</option>${WEEK_STARTS.map((weekStart) => `<option value="${escapeHtml(weekStart)}">${escapeHtml(getWeekLabel(weekStart))}</option>`).join("")}`;
+      employeeFilter.value = ui.employee;
+      companyFilter.value = ui.company;
+      weekFilter.value = ui.week;
+    }
+
+    function loadState() {
+      try {
+        const raw = window.localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.shifts) && Array.isArray(parsed.logs)) {
+            return normalizeState(parsed);
+          }
+        }
+      } catch (error) {
+        return createDefaultState("Автосохранение недоступно: " + error.message);
+      }
+      return createDefaultState();
+    }
+
+    function createDefaultState(warning) {
+      const created = new Date().toLocaleString("ru-RU");
+      const shifts = generateDefaultShifts();
+      const logs = [
+        { time: created, level: "info", message: "Сгенерировано исходное расписание на июнь-август 2026" },
+        { time: created, level: "info", message: "Учтены даты первых смен: Денис 05.06.2026, Софья 17.06.2026, Асет 25.06.2026" },
+        { time: created, level: "info", message: "Загружены реквизиты сотрудников из Excel: сотрудл.xlsx" },
+        { time: created, level: "info", message: "Реквизиты ЛЕА распознаны из PDF через локальный Windows OCR" },
+        { time: created, level: "info", message: "Реквизиты ОИА заполнены из PDF: Карточка ОИА.pdf" },
+        { time: created, level: "info", message: "Реквизиты КАА заполнены из DOCX: Реквизиты Кислянская.docx" },
+        { time: created, level: "info", message: "Недели считаются с понедельника по воскресенье" },
+        { time: created, level: "info", message: "Правило 4-6 смен применяется только к полным неделям периода" }
+      ];
+      if (warning) logs.push({ time: created, level: "warning", message: warning });
+      return normalizeState({ version: 7, shifts, logs, paymentStatuses: {} });
+    }
+
+    function normalizeState(rawState) {
+      const shifts = Array.isArray(rawState.shifts) ? rawState.shifts : generateDefaultShifts();
+      const employees = mergeDetails(DEFAULT_EMPLOYEE_DETAILS, rawState.requisites?.employees);
+      normalizeEmployeeContracts(employees, shifts);
+      return {
+        version: 7,
+        shifts,
+        logs: Array.isArray(rawState.logs) ? rawState.logs : [],
+        paymentStatuses: normalizePaymentStatuses(rawState.paymentStatuses),
+        requisites: {
+          companies: mergeDetails(DEFAULT_COMPANY_DETAILS, rawState.requisites?.companies),
+          employees
+        }
+      };
+    }
+
+    function normalizePaymentStatuses(rawStatuses) {
+      const result = {};
+      if (!rawStatuses || typeof rawStatuses !== "object") return result;
+      Object.entries(rawStatuses).forEach(([key, status]) => {
+        if (PAYMENT_STATUSES[status]) result[key] = status;
+      });
+      return result;
+    }
+
+    function normalizeEmployeeContracts(employees, shifts) {
+      EMPLOYEES.forEach((employee) => {
+        const details = employees[employee];
+        if (!details) return;
+        const existingContracts = details.contracts && typeof details.contracts === "object" ? details.contracts : {};
+        details.contracts = {};
+        (EMPLOYEE_COMPANIES[employee] || []).forEach((company) => {
+          const fallback = getDefaultContractDetails(employee, company, shifts);
+          const existing = existingContracts[company] && typeof existingContracts[company] === "object" ? existingContracts[company] : {};
+          details.contracts[company] = {
+            number: String(existing.number || fallback.number || "").trim(),
+            date: normalizeContractDate(existing.date, fallback.date)
+          };
+        });
+      });
+      return employees;
+    }
+
+    function normalizeContractDate(date, fallbackDate) {
+      if (!isValidIsoDate(date)) return fallbackDate;
+      return date >= fallbackDate ? date : fallbackDate;
+    }
+
+    function getDefaultContractDetails(employee, company, shifts = state?.shifts || []) {
+      return {
+        number: getGeneratedContractNumber(employee, company, shifts),
+        date: getFirstEmployeeCompanyShiftDate(employee, company, shifts) || getFirstEmployeeShiftDate(employee, shifts) || START_DATE
+      };
+    }
+
+    function getGeneratedContractNumber(employee, company, shifts = state?.shifts || []) {
+      const key = getDocumentKeyFromParts("contract", CONTRACT_YEAR, employee, company);
+      const allKeys = getDocumentKeysFromRows(shifts, "contract", company);
+      const index = allKeys.indexOf(key);
+      const sequence = index >= 0 ? index + 1 : shortHashNumber(key);
+      return formatShortDocumentNumber("contract", company, sequence);
+    }
+
+    function getDocumentKeysFromRows(shifts, docType, company) {
+      const keys = new Set();
+      validRowsForMath(shifts)
+        .filter((row) => !company || row.company === company)
+        .forEach((row) => {
+          keys.add(getDocumentKeyFromParts(docType, row.weekStart || getWeekStart(row.date), row.employee, row.company));
+        });
+      return [...keys].sort();
+    }
+
+    function getFirstEmployeeCompanyShiftDate(employee, company, shifts = state?.shifts || []) {
+      const dates = validRowsForMath(shifts)
+        .filter((row) => row.employee === employee && row.company === company)
+        .map((row) => row.date)
+        .filter(isValidIsoDate)
+        .sort();
+      return dates[0] || "";
+    }
+
+    function getFirstEmployeeShiftDate(employee, shifts = state?.shifts || []) {
+      const dates = validRowsForMath(shifts)
+        .filter((row) => row.employee === employee)
+        .map((row) => row.date)
+        .filter(isValidIsoDate)
+        .sort();
+      return dates[0] || "";
+    }
+
+    function mergeDetails(defaults, overrides) {
+      const result = {};
+      Object.entries(defaults).forEach(([key, value]) => {
+        const override = overrides?.[key] || {};
+        result[key] = { ...value };
+        Object.entries(override).forEach(([field, overrideValue]) => {
+          const defaultValue = value[field];
+          result[key][field] = shouldUseDefaultDetailValue(key, field, defaultValue, overrideValue) ? defaultValue : overrideValue;
+        });
+      });
+      return result;
+    }
+
+    function shouldUseDefaultDetailValue(key, field, defaultValue, overrideValue) {
+      if (overrideValue === undefined || overrideValue === null) return true;
+      if (typeof overrideValue !== "string") return false;
+      const trimmed = overrideValue.trim();
+      if (!trimmed && defaultValue) return true;
+      const staleCompanyPlaceholder = ["legalName", "shortName", "source"].includes(field) && (trimmed === key || trimmed === "Реквизиты не приложены");
+      return Boolean(defaultValue && staleCompanyPlaceholder);
+    }
+
+    function generateDefaultShifts() {
+      const dayPatterns = {
+        4: [[0, 1, 3, 5], [0, 2, 4, 6], [1, 2, 4, 5]],
+        5: [[0, 1, 2, 4, 6], [0, 1, 2, 3, 6], [0, 2, 3, 5, 6]],
+        6: [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 5, 6], [0, 1, 2, 4, 5, 6]]
+      };
+      const weeklyCounts = {
+        "Денис": [[2, 3], [3, 2], [1, 3], [3, 2], [2, 4], [3, 1], [1, 4], [4, 1], [2, 3], [1, 5], [5, 1], [2, 4]],
+        "Софья": [[1, 4], [3, 1], [2, 3], [4, 2], [1, 5], [3, 2], [2, 4], [5, 1], [1, 3], [4, 1], [2, 3], [3, 1]],
+        "Асет": [[3, 2], [1, 5], [4, 1], [1, 3], [2, 4], [1, 4], [4, 2], [2, 3], [3, 1], [2, 4], [5, 1], [1, 3]]
+      };
+      const firstPartialShifts = {
+        "Денис": [
+          { date: "2026-06-05", company: "ЛЕА", hours: 10 },
+          { date: "2026-06-06", company: "ОИА", hours: 12 },
+          { date: "2026-06-07", company: "ЛЕА", hours: 11 }
+        ],
+        "Софья": [
+          { date: "2026-06-17", company: "ЛЕА", hours: 11 },
+          { date: "2026-06-18", company: "КАА", hours: 12 },
+          { date: "2026-06-19", company: "КАА", hours: 10 },
+          { date: "2026-06-20", company: "ЛЕА", hours: 12 },
+          { date: "2026-06-21", company: "КАА", hours: 11 }
+        ],
+        "Асет": [
+          { date: "2026-06-25", company: "КАА", hours: 10 },
+          { date: "2026-06-26", company: "ОИА", hours: 11 },
+          { date: "2026-06-27", company: "КАА", hours: 12 },
+          { date: "2026-06-28", company: "КАА", hours: 10 }
+        ]
+      };
+      const shifts = [];
+      let id = 1;
+
+      Object.entries(firstPartialShifts).forEach(([employee, rows]) => {
+        rows.forEach((row) => {
+          shifts.push({
+            id: "s" + id++,
+            employee,
+            date: row.date,
+            company: row.company,
+            hours: row.hours,
+            rate: RATES[row.company]
+          });
+        });
+      });
+
+      const activeWeekIndexByEmployee = Object.fromEntries(EMPLOYEES.map((employee) => [employee, 0]));
+
+      FULL_WEEK_STARTS.forEach((weekStart) => {
+        EMPLOYEES.forEach((employee, employeeIndex) => {
+          if (!isEmployeeActiveFullWeek(employee, weekStart)) return;
+          const activeWeekIndex = activeWeekIndexByEmployee[employee]++;
+          const counts = weeklyCounts[employee][activeWeekIndex % weeklyCounts[employee].length];
+          const total = counts[0] + counts[1];
+          const patternList = dayPatterns[total];
+          const offsets = patternList[(activeWeekIndex + employeeIndex) % patternList.length];
+          const companies = EMPLOYEE_COMPANIES[employee];
+          const companySequence = buildCompanySequence(companies, counts, activeWeekIndex + employeeIndex);
+
+          offsets.forEach((offset, shiftIndex) => {
+            const date = toIso(addDays(parseIso(weekStart), offset));
+            const company = companySequence[shiftIndex];
+            const hours = 10 + ((activeWeekIndex + employeeIndex + shiftIndex * 2) % 3);
+            shifts.push({
+              id: "s" + id++,
+              employee,
+              date,
+              company,
+              hours,
+              rate: RATES[company]
+            });
+          });
+        });
+      });
+
+      EMPLOYEES.forEach((employee, index) => {
+        const company = EMPLOYEE_COMPANIES[employee][index % 2];
+        shifts.push({
+          id: "s" + id++,
+          employee,
+          date: "2026-08-31",
+          company,
+          hours: 10 + index,
+          rate: RATES[company]
+        });
+      });
+
+      return sortShifts(shifts);
+    }
+
+    function buildCompanySequence(companies, counts, seed) {
+      const base = [
+        ...Array(counts[0]).fill(companies[0]),
+        ...Array(counts[1]).fill(companies[1])
+      ];
+      if (seed % 2 === 1) base.reverse();
+      const rotation = seed % base.length;
+      return base.slice(rotation).concat(base.slice(0, rotation));
+    }
+
+    function renderApp() {
+      setupStaticControls();
+      document.getElementById("employeeFilter").value = ui.employee;
+      document.getElementById("companyFilter").value = ui.company;
+      document.getElementById("weekFilter").value = ui.week;
+      renderTabs();
+      renderMetrics();
+      renderPanel();
+      renderAuthPanel();
+      updateSaveState();
+      renderQueued = false;
+    }
+
+    function scheduleRender() {
+      if (renderQueued) return;
+      renderQueued = true;
+      window.requestAnimationFrame(renderApp);
+    }
+
+    function refreshVisibleComputations() {
+      const issuesByRow = getIssuesByRow();
+      document.querySelectorAll("tr[data-id]").forEach((rowElement) => {
+        const row = state.shifts.find((item) => item.id === rowElement.dataset.id);
+        if (!row) return;
+        const weekStart = getWeekStart(row.date);
+        rowElement.classList.toggle("has-issue", issuesByRow.has(row.id));
+        const dayCell = rowElement.querySelector('[data-view="day"]');
+        const amountCell = rowElement.querySelector('[data-view="amount"]');
+        const weekCell = rowElement.querySelector('[data-view="week"]');
+        const weekSumCell = rowElement.querySelector('[data-view="weekSum"]');
+        const paymentStatusCell = rowElement.querySelector('[data-view="paymentStatus"]');
+        if (dayCell) dayCell.textContent = getDayName(row.date);
+        if (amountCell) amountCell.textContent = formatRub(getDayAmount(row));
+        if (weekCell) weekCell.innerHTML = `${escapeHtml(getWeekLabel(weekStart))}${isFullWeek(weekStart) ? "" : ` <span class="badge warn">неполная</span>`}`;
+        if (weekSumCell) weekSumCell.textContent = formatRub(getEmployeeCompanyWeekSum(row.employee, row.company, weekStart));
+        if (paymentStatusCell) {
+          const paymentKey = getPaymentKey(weekStart, row.employee, row.company);
+          paymentStatusCell.innerHTML = renderPaymentStatusSelect(paymentKey, getPaymentStatus(paymentKey, weekStart));
+        }
+      });
+      renderMetrics();
+      updateSaveState();
+    }
+
+    function renderTabs() {
+      document.getElementById("tabs").innerHTML = TABS.map((tab) => `
+        <button type="button" class="tab ${tab.id === ui.activeTab ? "active" : ""}" data-tab="${escapeHtml(tab.id)}">
+          ${escapeHtml(tab.title)}
+        </button>
+      `).join("");
+    }
+
+    function renderMetrics() {
+      const rows = validRowsForMath(state.shifts);
+      const total = rows.reduce((sum, row) => sum + getDayAmount(row), 0);
+      const hours = rows.reduce((sum, row) => sum + Number(row.hours || 0), 0);
+      const checks = validateSchedule();
+      const fullWeekCount = FULL_WEEK_STARTS.length;
+      const issueText = checks.errors.length === 0 ? "Ошибок нет" : `${checks.errors.length} ошибок`;
+      const warningText = checks.warnings.length === 0 ? "Предупреждений нет" : `${checks.warnings.length} предупреждений`;
+      document.getElementById("metrics").innerHTML = `
+        <article class="metric">
+          <div class="metric-label">Смены</div>
+          <div class="metric-value">${numberFormat.format(rows.length)}</div>
+          <div class="metric-note">в периоде 01.06-31.08</div>
+        </article>
+        <article class="metric">
+          <div class="metric-label">Часы</div>
+          <div class="metric-value">${numberFormat.format(hours)}</div>
+          <div class="metric-note">по заполненным строкам</div>
+        </article>
+        <article class="metric">
+          <div class="metric-label">К выплате</div>
+          <div class="metric-value">${formatRub(total)}</div>
+          <div class="metric-note">общая сумма</div>
+        </article>
+        <article class="metric">
+          <div class="metric-label">Проверка</div>
+          <div class="metric-value">${escapeHtml(issueText)}</div>
+          <div class="metric-note">${escapeHtml(warningText)}, ${fullWeekCount} полных недель</div>
+        </article>
+      `;
+    }
+
+    function renderPanel() {
+      const activeMonth = MONTHS.find((month) => month.id === ui.activeTab);
+      if (activeMonth) {
+        renderMonthPanel(activeMonth);
+        return;
+      }
+      if (ui.activeTab === "summary") renderSummaryPanel();
+      if (ui.activeTab === "requisites") renderRequisitesPanel();
+      if (ui.activeTab === "documents") renderDocumentsPanel();
+      if (ui.activeTab === "checks") renderChecksPanel();
+      if (ui.activeTab === "log") renderLogPanel();
+    }
+
+    function renderMonthPanel(month) {
+      const issuesByRow = getIssuesByRow();
+      const rows = getVisibleRows(month.id);
+      const body = rows.map((row) => {
+        const amount = getDayAmount(row);
+        const weekStart = getWeekStart(row.date);
+        const weekSum = getEmployeeCompanyWeekSum(row.employee, row.company, weekStart);
+        const paymentKey = getPaymentKey(weekStart, row.employee, row.company);
+        const hasIssue = issuesByRow.has(row.id);
+        return `
+          <tr data-id="${escapeHtml(row.id)}" class="${hasIssue ? "has-issue" : ""}">
+            <td>
+              <select data-field="employee" aria-label="ФИО">
+                ${EMPLOYEES.map((employee) => `<option value="${escapeHtml(employee)}" ${employee === row.employee ? "selected" : ""}>${escapeHtml(employee)}</option>`).join("")}
+              </select>
+            </td>
+            <td>
+              <input data-field="date" type="date" min="${START_DATE}" max="${END_DATE}" value="${escapeHtml(row.date)}" aria-label="Дата">
+            </td>
+            <td data-view="day">${escapeHtml(getDayName(row.date))}</td>
+            <td>
+              <select data-field="company" aria-label="Компания">
+                ${COMPANIES.map((company) => `<option value="${escapeHtml(company)}" ${company === row.company ? "selected" : ""}>${escapeHtml(company)}</option>`).join("")}
+              </select>
+            </td>
+            <td>
+              <input data-field="hours" type="number" min="0" max="24" step="1" value="${escapeHtml(String(row.hours))}" aria-label="Часы">
+            </td>
+            <td>
+              <input data-field="rate" type="number" min="0" step="1" value="${escapeHtml(String(row.rate))}" aria-label="Ставка">
+            </td>
+            <td class="num amount" data-view="amount">${formatRub(amount)}</td>
+            <td data-view="week">${escapeHtml(getWeekLabel(weekStart))}${isFullWeek(weekStart) ? "" : ` <span class="badge warn">неполная</span>`}</td>
+            <td class="num amount" data-view="weekSum">${formatRub(weekSum)}</td>
+            <td data-view="paymentStatus">${renderPaymentStatusSelect(paymentKey, getPaymentStatus(paymentKey, weekStart))}</td>
+            <td class="col-action">
+              <button type="button" class="icon danger" data-action="delete-row" data-id="${escapeHtml(row.id)}" title="Удалить смену" aria-label="Удалить смену">×</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      document.getElementById("panel").innerHTML = `
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">${escapeHtml(month.title)}</div>
+            <div class="muted">${numberFormat.format(rows.length)} строк</div>
+          </div>
+          <div class="panel-actions">
+            <span class="badge ${issuesByRow.size ? "warn" : "ok"}">${issuesByRow.size ? "есть замечания" : "проверка чистая"}</span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-name">ФИО</th>
+                <th class="col-date">Дата</th>
+                <th class="col-day">День недели</th>
+                <th class="col-company">Компания</th>
+                <th class="col-hours num">Часы</th>
+                <th class="col-rate num">Ставка</th>
+                <th class="col-amount num">Сумма за день</th>
+                <th class="col-week">Неделя</th>
+                <th class="col-week-sum num">Сумма за неделю по компании</th>
+                <th>Статус оплаты</th>
+                <th class="col-action"> </th>
+              </tr>
+            </thead>
+            <tbody>${body || `<tr><td colspan="11" class="empty">Нет строк</td></tr>`}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function renderSummaryPanel() {
+      const weekRows = getSortedWeekSummaryRows();
+      const maxTotal = Math.max(1, ...weekRows.map((row) => row.total));
+      const body = weekRows.map((row) => {
+        const paymentKey = getPaymentKey(row.weekStart, row.employee, row.company);
+        return `
+          <tr>
+            <td>${escapeHtml(getWeekLabel(row.weekStart))}</td>
+            <td>${isFullWeek(row.weekStart) ? `<span class="badge ok">полная</span>` : `<span class="badge warn">неполная</span>`}</td>
+            <td>${escapeHtml(row.employee)}</td>
+            <td>${escapeHtml(row.company)}</td>
+            <td class="num">${row.shifts}</td>
+            <td class="num">${numberFormat.format(row.hours)}</td>
+            <td class="num amount">${formatRub(row.total)}</td>
+            <td>${renderPaymentStatusSelect(paymentKey, getPaymentStatus(paymentKey, row.weekStart))}</td>
+          </tr>
+        `;
+      }).join("");
+      const chart = weekRows.map((row) => `
+        <div class="chart-row">
+          <div>${escapeHtml(row.employee)} · ${escapeHtml(row.company)} · ${escapeHtml(formatShortWeek(row.weekStart))}</div>
+          <div class="bar" aria-hidden="true"><span style="width: ${Math.max(4, Math.round(row.total / maxTotal * 100))}%"></span></div>
+          <div class="num amount">${formatRub(row.total)}</div>
+        </div>
+      `).join("");
+      document.getElementById("panel").innerHTML = `
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Свод по неделям</div>
+            <div class="muted">кому и сколько перечислять</div>
+          </div>
+          <div class="panel-actions">
+            <span class="badge info">${escapeHtml(getSummarySortLabel())}</span>
+            <span class="badge info">${numberFormat.format(weekRows.length)} строк</span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th><button type="button" class="sort-button" data-summary-sort="week">Неделя <span class="sort-indicator">${getSummarySortIndicator("week")}</span></button></th>
+                <th>Статус</th>
+                <th><button type="button" class="sort-button" data-summary-sort="employee">ФИО <span class="sort-indicator">${getSummarySortIndicator("employee")}</span></button></th>
+                <th><button type="button" class="sort-button" data-summary-sort="company">Компания <span class="sort-indicator">${getSummarySortIndicator("company")}</span></button></th>
+                <th class="num">Смены</th>
+                <th class="num">Часы</th>
+                <th class="num">Итого</th>
+                <th>Оплата</th>
+              </tr>
+            </thead>
+            <tbody>${body}</tbody>
+          </table>
+          <div>${chart}</div>
+        </div>
+      `;
+    }
+
+    function renderRequisitesPanel() {
+      const companyFields = [
+        ["legalName", "Полное наименование"],
+        ["shortName", "Краткое наименование"],
+        ["inn", "ИНН"],
+        ["ogrn", "ОГРН/ОГРНИП"],
+        ["address", "Адрес"],
+        ["actualAddress", "Фактический адрес"],
+        ["postalAddress", "Почтовый адрес"],
+        ["email", "Электронная почта"],
+        ["phone", "Телефон"],
+        ["bank", "Банк"],
+        ["account", "Расчетный счет"],
+        ["corrAccount", "Корр. счет"],
+        ["bik", "БИК"],
+        ["okpo", "ОКПО"],
+        ["okato", "ОКАТО"],
+        ["oktmo", "ОКТМО"],
+        ["bankInn", "ИНН банка"],
+        ["bankKpp", "КПП банка"],
+        ["signatory", "Подписант"],
+        ["basis", "Основание"],
+        ["serviceName", "Услуги для ТЗ"],
+        ["source", "Источник"]
+      ];
+      const employeeFields = [
+        ["fullName", "ФИО"],
+        ["birthDate", "Дата рождения"],
+        ["citizenship", "Гражданство"],
+        ["inn", "ИНН"],
+        ["snils", "СНИЛС"],
+        ["passport", "Паспорт"],
+        ["passportIssuer", "Кем выдан"],
+        ["passportDate", "Когда выдан"],
+        ["address", "Адрес"],
+        ["bank", "Банк"],
+        ["account", "Расчетный счет"],
+        ["corrAccount", "Корр. счет"],
+        ["bik", "БИК"],
+        ["taxStatus", "Налоговый статус"],
+        ["source", "Источник"]
+      ];
+      const companyCards = COMPANIES.map((company) => renderDetailCard("companies", company, state.requisites.companies[company], companyFields)).join("");
+      const employeeCards = EMPLOYEES.map((employee) => renderDetailCard("employees", employee, state.requisites.employees[employee], employeeFields)).join("");
+      document.getElementById("panel").innerHTML = `
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Реквизиты</div>
+            <div class="muted">компании и самозанятые исполнители</div>
+          </div>
+          <div class="panel-actions">
+            <span class="badge warn">ЛЕА: часть реквизитов нужно проверить вручную</span>
+          </div>
+        </div>
+        <div class="legal-note">Данные сотрудников загружены из Excel. PDF ЛЕА содержит текст в закодированном виде: автоматически подтверждено только название ИП, остальные поля оставлены редактируемыми.</div>
+        <div class="cards-grid">${companyCards}</div>
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Сотрудники</div>
+            <div class="muted">данные используются в договорах, актах и ТЗ</div>
+          </div>
+        </div>
+        <div class="cards-grid">${employeeCards}</div>
+      `;
+    }
+
+    function renderDetailCard(type, key, details, fields) {
+      return `
+        <article class="detail-card">
+          <h3>${escapeHtml(key)}</h3>
+          <div class="detail-fields">
+            ${fields.map(([field, label]) => renderRequisiteField(type, key, field, label, details?.[field] || "")).join("")}
+          </div>
+          ${type === "employees" ? renderEmployeeContractFields(key) : ""}
+        </article>
+      `;
+    }
+
+    function renderRequisiteField(type, key, field, label, value) {
+      const isLong = ["address", "actualAddress", "postalAddress", "source", "serviceName"].includes(field);
+      const common = `data-requisite-type="${escapeHtml(type)}" data-requisite-key="${escapeHtml(key)}" data-requisite-field="${escapeHtml(field)}"`;
+      return `
+        <label>
+          ${escapeHtml(label)}
+          ${isLong
+            ? `<textarea ${common} rows="2">${escapeHtml(value)}</textarea>`
+            : `<input ${common} type="text" value="${escapeHtml(value)}">`}
+        </label>
+      `;
+    }
+
+    function renderEmployeeContractFields(employee) {
+      const rows = (EMPLOYEE_COMPANIES[employee] || []).map((company) => {
+        const contract = getEmployeeCompanyContract(employee, company);
+        const minDate = getDefaultContractDetails(employee, company).date;
+        return `
+          <div class="contract-row">
+            <strong>${escapeHtml(company)}</strong>
+            <label>
+              Номер договора
+              <input data-contract-employee="${escapeHtml(employee)}" data-contract-company="${escapeHtml(company)}" data-contract-field="number" type="text" maxlength="6" value="${escapeHtml(contract.number)}">
+            </label>
+            <label>
+              Дата договора
+              <input data-contract-employee="${escapeHtml(employee)}" data-contract-company="${escapeHtml(company)}" data-contract-field="date" type="date" min="${escapeHtml(minDate)}" value="${escapeHtml(contract.date)}">
+            </label>
+          </div>
+        `;
+      }).join("");
+      return `
+        <div class="contract-fields">
+          <h4>Договоры с компаниями</h4>
+          ${rows}
+        </div>
+      `;
+    }
+
+    function renderDocumentsPanel() {
+      const rows = getSortedWeekSummaryRows();
+      const body = rows.map((row) => {
+        const missing = getDocumentMissingFields(row);
+        return `
+          <div class="doc-row">
+            <div>
+              <strong>${escapeHtml(getWeekLabel(row.weekStart))}</strong>
+              <div class="muted">${isFullWeek(row.weekStart) ? "полная неделя" : "неполная неделя"}</div>
+            </div>
+            <div>${escapeHtml(row.employee)}</div>
+            <div>${escapeHtml(row.company)}</div>
+            <div class="num">${row.shifts} / ${numberFormat.format(row.hours)} ч</div>
+            <div class="num amount">${formatRub(row.total)}</div>
+            <div class="doc-actions">
+              ${missing.length ? `<span class="badge warn" title="${escapeHtml(missing.join(", "))}">проверьте реквизиты</span>` : `<span class="badge ok">готово</span>`}
+              <button type="button" data-action="export-doc" data-format="doc" data-doc="contract" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Договор DOC</button>
+              <button type="button" data-action="export-doc" data-format="pdf" data-doc="contract" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Договор PDF</button>
+              <button type="button" data-action="export-doc" data-format="doc" data-doc="task" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">ТЗ DOC</button>
+              <button type="button" data-action="export-doc" data-format="pdf" data-doc="task" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">ТЗ PDF</button>
+              <button type="button" data-action="export-doc" data-format="doc" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Акт DOC</button>
+              <button type="button" data-action="export-doc" data-format="pdf" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Акт PDF</button>
+              <button type="button" class="primary" data-action="export-doc" data-format="doc" data-doc="package" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Пакет DOC</button>
+              <button type="button" class="primary" data-action="export-doc" data-format="pdf" data-doc="package" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Пакет PDF</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+      document.getElementById("panel").innerHTML = `
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Документы</div>
+            <div class="muted">рамочный договор на 2026 год, недельные ТЗ и акты</div>
+          </div>
+          <div class="panel-actions">
+            <span class="badge info">${numberFormat.format(rows.length)} комплектов</span>
+          </div>
+        </div>
+        <div class="legal-note">Договор формируется как рамочный на 2026 год. Недельные ТЗ и акты фиксируют результат и стоимость; внутренние расчетные поля не включаются в документы как условие о графике или оплате времени.</div>
+        <div class="docs-list">${body || `<div class="empty">Нет данных для документов</div>`}</div>
+      `;
+    }
+
+    function renderChecksPanel() {
+      const checks = validateSchedule();
+      const rows = [
+        ...checks.errors.map((item) => ({ ...item, kind: "Ошибка" })),
+        ...checks.warnings.map((item) => ({ ...item, kind: "Предупреждение" }))
+      ];
+      const body = rows.map((item) => `
+        <div><span class="badge ${item.kind === "Ошибка" ? "error" : "warn"}">${escapeHtml(item.kind)}</span></div>
+        <div>${escapeHtml(item.rowId || "неделя")}</div>
+        <div>${escapeHtml(item.message)}</div>
+      `).join("");
+      const status = checks.errors.length === 0 ? "Ошибок нет" : `${checks.errors.length} ошибок`;
+      addValidationLogOnce(checks);
+      document.getElementById("panel").innerHTML = `
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Проверка</div>
+            <div class="muted">${escapeHtml(status)}, предупреждений: ${checks.warnings.length}</div>
+          </div>
+          <div class="panel-actions">
+            <span class="badge ${checks.errors.length ? "error" : "ok"}">${checks.errors.length ? "нужно исправить" : "готово"}</span>
+          </div>
+        </div>
+        ${rows.length ? `
+          <div class="checks">
+            <div class="head">Тип</div>
+            <div class="head">Строка</div>
+            <div class="head">Описание</div>
+            ${body}
+          </div>
+        ` : `<div class="empty">Проверка не нашла ошибок</div>`}
+      `;
+    }
+
+    function renderLogPanel() {
+      const logs = [...state.logs].reverse();
+      const body = logs.map((item) => `
+        <li>
+          <span class="muted">${escapeHtml(item.time)}</span>
+          <span class="badge ${levelClass(item.level)}">${escapeHtml(levelLabel(item.level))}</span>
+          <span>${escapeHtml(item.message)}</span>
+        </li>
+      `).join("");
+      document.getElementById("panel").innerHTML = `
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Лог</div>
+            <div class="muted">${numberFormat.format(logs.length)} записей</div>
+          </div>
+          <div class="panel-actions">
+            <button type="button" data-action="export-csv">Экспорт CSV</button>
+          </div>
+        </div>
+        <ul class="log-list">${body}</ul>
+      `;
+    }
+
+    function getVisibleRows(monthId) {
+      return sortShifts(state.shifts)
+        .filter((row) => row.date && row.date.slice(0, 7) === monthId)
+        .filter((row) => ui.employee === "all" || row.employee === ui.employee)
+        .filter((row) => ui.company === "all" || row.company === ui.company)
+        .filter((row) => ui.week === "all" || getWeekStart(row.date) === ui.week);
+    }
+
+    function updateShift(id, field, rawValue, shouldLog) {
+      const row = state.shifts.find((item) => item.id === id);
+      if (!row) return;
+      const oldValue = row[field];
+      if (field === "hours" || field === "rate") {
+        row[field] = Number(rawValue);
+      } else {
+        row[field] = rawValue;
+      }
+      if (field === "employee" && !EMPLOYEE_COMPANIES[row.employee]?.includes(row.company)) {
+        row.company = EMPLOYEE_COMPANIES[row.employee]?.[0] || row.company;
+        row.rate = RATES[row.company] || row.rate;
+      }
+      if (field === "company" && RATES[row.company]) {
+        row.rate = RATES[row.company];
+      }
+      state.shifts = sortShifts(state.shifts);
+      persistState();
+      if (shouldLog && String(oldValue) !== String(row[field])) {
+        addLog(`Изменена строка ${id}: ${fieldLabel(field)} с "${oldValue}" на "${row[field]}"`, "info");
+      }
+    }
+
+    function updateRequisite(type, key, field, value) {
+      if (!state.requisites?.[type]?.[key]) return;
+      state.requisites[type][key][field] = value;
+      persistState();
+      updateSaveState("Реквизиты сохранены");
+    }
+
+    function updateEmployeeContract(employee, company, field, value) {
+      const details = state.requisites?.employees?.[employee];
+      if (!details || !EMPLOYEE_COMPANIES[employee]?.includes(company)) return;
+      if (!details.contracts || typeof details.contracts !== "object") details.contracts = {};
+      if (!details.contracts[company] || typeof details.contracts[company] !== "object") {
+        details.contracts[company] = getDefaultContractDetails(employee, company, state.shifts);
+      }
+      if (field === "number") {
+        details.contracts[company].number = String(value).trim().slice(0, 6);
+      }
+      if (field === "date") {
+        const fallback = getDefaultContractDetails(employee, company, state.shifts);
+        details.contracts[company].date = normalizeContractDate(value, fallback.date);
+      }
+      persistState();
+      updateSaveState("Договор сохранен");
+      return details.contracts[company][field];
+    }
+
+    function updatePaymentStatus(paymentKey, status) {
+      if (!PAYMENT_STATUSES[status]) return;
+      if (!state.paymentStatuses) state.paymentStatuses = {};
+      const oldStatus = state.paymentStatuses[paymentKey];
+      state.paymentStatuses[paymentKey] = status;
+      persistState();
+      if (oldStatus !== status) {
+        addLog(`Статус оплаты изменен: ${paymentKey} → ${PAYMENT_STATUSES[status].label}`, "info");
+      }
+      renderApp();
+      showToast("Статус оплаты сохранен");
+    }
+
+    function addShift() {
+      const month = MONTHS.find((item) => item.id === ui.activeTab) || MONTHS[0];
+      const date = month.id + "-01";
+      const employee = ui.employee === "all" ? "Денис" : ui.employee;
+      const allowed = EMPLOYEE_COMPANIES[employee] || EMPLOYEE_COMPANIES["Денис"];
+      const company = ui.company !== "all" && allowed.includes(ui.company) ? ui.company : allowed[0];
+      const id = "s" + (Date.now().toString(36));
+      state.shifts.push({ id, employee, date, company, hours: 10, rate: RATES[company] });
+      state.shifts = sortShifts(state.shifts);
+      addLog(`Добавлена смена ${id}`, "info");
+      persistState();
+      if (!MONTHS.some((item) => item.id === ui.activeTab)) ui.activeTab = month.id;
+      renderApp();
+      showToast("Смена добавлена");
+    }
+
+    function deleteShift(id) {
+      if (!id) return;
+      const row = state.shifts.find((item) => item.id === id);
+      if (!row) return;
+      const ok = window.confirm("Удалить смену?");
+      if (!ok) return;
+      state.shifts = state.shifts.filter((item) => item.id !== id);
+      addLog(`Удалена смена ${id}: ${row.employee}, ${row.date}, ${row.company}`, "warning");
+      persistState();
+      renderApp();
+      showToast("Смена удалена");
+    }
+
+    function resetData() {
+      const ok = window.confirm("Сбросить данные к исходному расписанию?");
+      if (!ok) return;
+      state = createDefaultState();
+      addLog("Данные сброшены к исходному расписанию", "warning");
+      persistState();
+      renderApp();
+      showToast("Данные сброшены");
+    }
+
+    function persistState() {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        if (currentUser) {
+          updateSaveState("Сохранено локально, идет синхронизация...");
+          scheduleCloudSave();
+        } else {
+          updateSaveState("Сохранено в браузере");
+        }
+      } catch (error) {
+        updateSaveState("Автосохранение недоступно");
+        addLog("Не удалось сохранить данные: " + error.message, "error", true);
+        showToast("Автосохранение недоступно");
+      }
+    }
+
+    function updateSaveState(text) {
+      const input = document.getElementById("saveState");
+      if (!input) return;
+      if (text) {
+        input.value = text;
+        return;
+      }
+      input.value = currentUser && lastCloudSync ? "Синхронизировано: " + lastCloudSync : "Сохранено в браузере";
+    }
+
+    function addLog(message, level = "info", skipPersist = false) {
+      const entry = { time: new Date().toLocaleString("ru-RU"), level, message };
+      const last = state.logs[state.logs.length - 1];
+      if (last && last.message === entry.message && last.level === entry.level) return;
+      state.logs.push(entry);
+      if (state.logs.length > 500) state.logs = state.logs.slice(-500);
+      if (!skipPersist) {
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          scheduleCloudSave();
+        } catch (error) {
+          updateSaveState("Автосохранение недоступно");
+        }
+      }
+    }
+
+    function addValidationLogOnce(checks) {
+      const signature = `Проверка: ошибок ${checks.errors.length}, предупреждений ${checks.warnings.length}`;
+      const last = state.logs[state.logs.length - 1];
+      if (!last || last.message !== signature) {
+        addLog(signature, checks.errors.length ? "error" : (checks.warnings.length ? "warning" : "info"));
+      }
+    }
+
+    function validateSchedule() {
+      const errors = [];
+      const warnings = [];
+      const duplicateMap = new Map();
+
+      state.shifts.forEach((row) => {
+        if (!isValidIsoDate(row.date)) {
+          errors.push({ rowId: row.id, message: "Некорректная дата" });
+          return;
+        }
+        if (row.date < START_DATE || row.date > END_DATE) {
+          errors.push({ rowId: row.id, message: "Дата вне периода июнь-август 2026" });
+        }
+        if (EMPLOYEE_START_DATES[row.employee] && row.date < EMPLOYEE_START_DATES[row.employee]) {
+          errors.push({ rowId: row.id, message: `${row.employee}: смены не должны быть раньше ${formatDate(EMPLOYEE_START_DATES[row.employee])}` });
+        }
+        if (!EMPLOYEES.includes(row.employee)) {
+          errors.push({ rowId: row.id, message: "Неизвестный сотрудник" });
+        }
+        if (!COMPANIES.includes(row.company)) {
+          errors.push({ rowId: row.id, message: "Неизвестная компания" });
+        }
+        if (EMPLOYEE_COMPANIES[row.employee] && !EMPLOYEE_COMPANIES[row.employee].includes(row.company)) {
+          errors.push({ rowId: row.id, message: `${row.employee} не закреплен за компанией ${row.company}` });
+        }
+        if (!Number.isFinite(Number(row.hours)) || Number(row.hours) < 10 || Number(row.hours) > 12) {
+          errors.push({ rowId: row.id, message: "Часы должны быть от 10 до 12" });
+        }
+        if (RATES[row.company] && Number(row.rate) !== RATES[row.company]) {
+          warnings.push({ rowId: row.id, message: `Ставка для ${row.company} должна быть ${RATES[row.company]} руб/ч` });
+        }
+        const duplicateKey = row.employee + "|" + row.date;
+        if (duplicateMap.has(duplicateKey)) {
+          errors.push({ rowId: row.id, message: `У ${row.employee} уже есть смена на ${formatDate(row.date)}` });
+          errors.push({ rowId: duplicateMap.get(duplicateKey), message: `У ${row.employee} уже есть смена на ${formatDate(row.date)}` });
+        } else {
+          duplicateMap.set(duplicateKey, row.id);
+        }
+      });
+
+      const previousDistributionByEmployee = Object.fromEntries(EMPLOYEES.map((employee) => [employee, ""]));
+
+      FULL_WEEK_STARTS.forEach((weekStart) => {
+        EMPLOYEES.forEach((employee) => {
+          if (!isEmployeeActiveFullWeek(employee, weekStart)) return;
+          const rows = state.shifts.filter((row) => row.employee === employee && isValidIsoDate(row.date) && getWeekStart(row.date) === weekStart);
+          if (rows.length < 4 || rows.length > 6) {
+            errors.push({ rowId: "", message: `${employee}: за неделю ${getWeekLabel(weekStart)} должно быть 4-6 смен, сейчас ${rows.length}` });
+          }
+          const allowedCompanies = EMPLOYEE_COMPANIES[employee];
+          const companyCounts = allowedCompanies.map((company) => rows.filter((row) => row.company === company).length);
+          if (rows.length > 0 && companyCounts[0] === companyCounts[1]) {
+            errors.push({ rowId: "", message: `${employee}: за неделю ${getWeekLabel(weekStart)} смены по компаниям должны отличаться, сейчас ${allowedCompanies[0]} ${companyCounts[0]} и ${allowedCompanies[1]} ${companyCounts[1]}` });
+          }
+          const current = getCompanyDistribution(employee, weekStart);
+          const previous = previousDistributionByEmployee[employee];
+          if (previous && previous === current) {
+            warnings.push({ rowId: "", message: `${employee}: распределение компаний повторяет прошлую активную неделю (${getWeekLabel(weekStart)})` });
+          }
+          previousDistributionByEmployee[employee] = current;
+        });
+      });
+
+      const contractNumbers = new Map();
+      EMPLOYEES.forEach((employee) => {
+        (EMPLOYEE_COMPANIES[employee] || []).forEach((company) => {
+          const contract = getEmployeeCompanyContract(employee, company);
+          const label = `${employee} / ${company}`;
+          if (!contract.number) {
+            errors.push({ rowId: "", message: `${label}: укажите номер договора в реквизитах сотрудника` });
+          }
+          if (contract.number && contract.number.length > 6) {
+            errors.push({ rowId: "", message: `${label}: номер договора должен быть не длиннее 6 символов` });
+          }
+          if (!isValidIsoDate(contract.date)) {
+            errors.push({ rowId: "", message: `${label}: укажите корректную дату договора` });
+          }
+          if (contract.number) {
+            if (contractNumbers.has(contract.number)) {
+              errors.push({ rowId: "", message: `Номер договора ${contract.number} повторяется у ${contractNumbers.get(contract.number)} и ${label}` });
+            } else {
+              contractNumbers.set(contract.number, label);
+            }
+          }
+        });
+      });
+
+      return { errors: dedupeIssues(errors), warnings: dedupeIssues(warnings) };
+    }
+
+    function getIssuesByRow() {
+      const checks = validateSchedule();
+      const result = new Map();
+      [...checks.errors, ...checks.warnings].forEach((issue) => {
+        if (!issue.rowId) return;
+        result.set(issue.rowId, true);
+      });
+      return result;
+    }
+
+    function getCompanyDistribution(employee, weekStart) {
+      const counts = Object.fromEntries(COMPANIES.map((company) => [company, 0]));
+      state.shifts.forEach((row) => {
+        if (row.employee === employee && isValidIsoDate(row.date) && getWeekStart(row.date) === weekStart && counts[row.company] !== undefined) {
+          counts[row.company] += 1;
+        }
+      });
+      return EMPLOYEE_COMPANIES[employee].map((company) => company + ":" + counts[company]).join("|");
+    }
+
+    function dedupeIssues(items) {
+      const seen = new Set();
+      return items.filter((item) => {
+        const key = item.rowId + "|" + item.message;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function getWeekSummaryRows(applyFilters = true) {
+      const groups = new Map();
+      validRowsForMath(state.shifts)
+        .filter((row) => !applyFilters || ui.employee === "all" || row.employee === ui.employee)
+        .filter((row) => !applyFilters || ui.company === "all" || row.company === ui.company)
+        .filter((row) => !applyFilters || ui.week === "all" || getWeekStart(row.date) === ui.week)
+        .forEach((row) => {
+        const weekStart = getWeekStart(row.date);
+        const key = weekStart + "|" + row.employee + "|" + row.company;
+        if (!groups.has(key)) {
+          groups.set(key, { weekStart, employee: row.employee, company: row.company, shifts: 0, hours: 0, total: 0 });
+        }
+        const group = groups.get(key);
+        const amount = getDayAmount(row);
+        group.shifts += 1;
+        group.hours += Number(row.hours || 0);
+        group.total += amount;
+      });
+      return [...groups.values()];
+    }
+
+    function getSortedWeekSummaryRows() {
+      const rows = getWeekSummaryRows(true);
+      const sort = ui.summarySort || { field: "week", direction: "asc" };
+      const direction = sort.direction === "desc" ? -1 : 1;
+      return rows.sort((a, b) => {
+        const primary = compareSummaryRows(a, b, sort.field);
+        if (primary !== 0) return primary * direction;
+        return compareSummaryRows(a, b, "week") ||
+          compareSummaryRows(a, b, "employee") ||
+          compareSummaryRows(a, b, "company");
+      });
+    }
+
+    function compareSummaryRows(a, b, field) {
+      if (field === "week") return a.weekStart.localeCompare(b.weekStart);
+      if (field === "employee") return EMPLOYEES.indexOf(a.employee) - EMPLOYEES.indexOf(b.employee);
+      if (field === "company") return COMPANIES.indexOf(a.company) - COMPANIES.indexOf(b.company);
+      return 0;
+    }
+
+    function setSummarySort(field) {
+      const current = ui.summarySort || { field: "week", direction: "asc" };
+      ui.summarySort = {
+        field,
+        direction: current.field === field && current.direction === "asc" ? "desc" : "asc"
+      };
+      addLog(`Свод отсортирован: ${getSummarySortLabel()}`, "info");
+      renderApp();
+    }
+
+    function getSummarySortIndicator(field) {
+      const sort = ui.summarySort || { field: "week", direction: "asc" };
+      if (sort.field !== field) return "";
+      return sort.direction === "asc" ? "↑" : "↓";
+    }
+
+    function getSummarySortLabel() {
+      const sort = ui.summarySort || { field: "week", direction: "asc" };
+      const labels = { week: "неделя", employee: "сотрудник", company: "компания" };
+      const direction = sort.direction === "asc" ? "по возрастанию" : "по убыванию";
+      return `Сортировка: ${labels[sort.field] || "неделя"}, ${direction}`;
+    }
+
+    function validRowsForMath(rows) {
+      return rows.filter((row) =>
+        isValidIsoDate(row.date) &&
+        row.date >= START_DATE &&
+        row.date <= END_DATE &&
+        EMPLOYEES.includes(row.employee) &&
+        COMPANIES.includes(row.company) &&
+        Number.isFinite(Number(row.hours)) &&
+        Number.isFinite(Number(row.rate))
+      );
+    }
+
+    function getEmployeeCompanyWeekSum(employee, company, weekStart) {
+      return validRowsForMath(state.shifts)
+        .filter((row) => row.employee === employee && row.company === company && getWeekStart(row.date) === weekStart)
+        .reduce((sum, row) => sum + getDayAmount(row), 0);
+    }
+
+    function getPaymentKey(weekStart, employee, company) {
+      return [weekStart, employee, company].join("|");
+    }
+
+    function getPaymentStatus(paymentKey, weekStart) {
+      return state.paymentStatuses?.[paymentKey] || getDefaultPaymentStatus(weekStart);
+    }
+
+    function getDefaultPaymentStatus(weekStart) {
+      const weekEnd = toIso(addDays(parseIso(weekStart), 6));
+      return weekEnd >= getTodayIso() ? "not_due" : "unpaid";
+    }
+
+    function getTodayIso() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function renderPaymentStatusSelect(paymentKey, status) {
+      const safeStatus = PAYMENT_STATUSES[status] ? status : "unpaid";
+      const meta = PAYMENT_STATUSES[safeStatus];
+      return `
+        <select class="payment-select ${meta.className}" data-payment-key="${escapeHtml(paymentKey)}" aria-label="Статус оплаты">
+          ${Object.entries(PAYMENT_STATUSES).map(([value, item]) => `<option value="${escapeHtml(value)}" ${value === safeStatus ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("")}
+        </select>
+      `;
+    }
+
+    function getDayAmount(row) {
+      const hours = Number(row.hours || 0);
+      const rate = Number(row.rate || 0);
+      return hours * rate;
+    }
+
+    function exportCsv() {
+      try {
+        const rows = getCsvRows();
+        const csv = rows.map((row) => row.map(escapeCsv).join(";")).join("\n");
+        const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `raschet-smen-${ui.activeTab}-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        addLog("CSV экспортирован: " + ui.activeTab, "info");
+        showToast("CSV сформирован");
+      } catch (error) {
+        addLog("Не удалось экспортировать CSV: " + error.message, "error");
+        showToast("CSV не сформирован");
+      }
+    }
+
+    function exportDocument(dataset) {
+      if (!dataset?.week || !dataset.employee || !dataset.company || !dataset.doc) return;
+      const context = getDocumentContext(dataset.week, dataset.employee, dataset.company);
+      if (!context) {
+        showToast("Нет данных для документа");
+        return;
+      }
+      const format = dataset.format === "pdf" ? "pdf" : "doc";
+      if (format === "pdf") {
+        const opened = exportPdfDocument(dataset.doc, context);
+        if (opened) {
+          addLog(`Открыта выгрузка PDF: ${context.employee.shortName}, ${context.company.alias}, ${getWeekLabel(context.weekStart)}`, "info");
+          showToast(dataset.doc === "package" ? "Пакет PDF открыт для сохранения" : "PDF открыт для сохранения");
+        }
+        return;
+      }
+      const docs = dataset.doc === "package" ? ["contract", "task", "act"] : [dataset.doc];
+      docs.forEach((docType) => exportSingleDocument(docType, context));
+      addLog(`Выгружены документы: ${context.employee.shortName}, ${context.company.alias}, ${getWeekLabel(context.weekStart)}`, "info");
+      showToast(dataset.doc === "package" ? "Пакет документов сформирован" : "Документ сформирован");
+    }
+
+    function getDocumentContext(weekStart, employeeName, companyName) {
+      const summary = getWeekSummaryRows(false).find((row) => row.weekStart === weekStart && row.employee === employeeName && row.company === companyName);
+      if (!summary) return null;
+      const serviceRows = validRowsForMath(state.shifts)
+        .filter((row) => row.employee === employeeName && row.company === companyName && getWeekStart(row.date) === weekStart)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      return {
+        weekStart,
+        weekEnd: toIso(addDays(parseIso(weekStart), 6)),
+        summary,
+        serviceRows,
+        employee: state.requisites.employees[employeeName],
+        company: state.requisites.companies[companyName],
+        generatedAt: new Date().toLocaleDateString("ru-RU")
+      };
+    }
+
+    function exportSingleDocument(docType, context) {
+      const html = buildDocumentHtml(docType, context);
+      const periodSuffix = docType === "contract" ? CONTRACT_YEAR : context.weekStart;
+      const docNumber = docType === "contract" ? contractNumber(context) : getShortDocumentNumber(context, docType);
+      const fileName = `${docFilePrefix(docType)}_${safeFileName(docNumber)}_${periodSuffix}.doc`;
+      downloadDoc(fileName, html);
+    }
+
+    function exportPdfDocument(docType, context) {
+      const html = docType === "package" ? buildPdfPackageDocument(context) : buildDocumentHtml(docType, context);
+      const periodSuffix = docType === "contract" ? CONTRACT_YEAR : context.weekStart;
+      const docNumber = docType === "package" ? contractNumber(context) : (docType === "contract" ? contractNumber(context) : getShortDocumentNumber(context, docType));
+      const fileName = `${docFilePrefix(docType)}_${safeFileName(docNumber)}_${periodSuffix}.pdf`;
+      return openPdfPrintWindow(fileName, html);
+    }
+
+    function buildDocumentHtml(docType, context) {
+      const builders = {
+        contract: buildContractDocument,
+        task: buildTaskDocument,
+        act: buildActDocument
+      };
+      return builders[docType](context);
+    }
+
+    function buildPdfPackageDocument(context) {
+      const documents = ["contract", "task", "act"]
+        .map((docType) => getDocumentBody(buildDocumentHtml(docType, context)))
+        .map((body) => `<section class="pdf-document">${body}</section>`)
+        .join("");
+      return wrapDocumentHtml(`Пакет документов ${contractNumber(context)} ${context.weekStart}`, documents);
+    }
+
+    function getDocumentBody(html) {
+      const match = String(html).match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      return match ? match[1] : html;
+    }
+
+    function buildContractDocument(context) {
+      const contractDate = getContractDate(context);
+      return wrapDocumentHtml(`Договор ${contractNumber(context)}`, `
+        <h1>Договор оказания услуг № ${escapeHtml(contractNumber(context))}</h1>
+        <p>г. Москва <span class="right">${escapeHtml(formatDate(contractDate))}</span></p>
+        <p>${partyCompany(context.company)}, именуемый в дальнейшем "Заказчик", с одной стороны, и ${partyEmployee(context.employee)}, применяющий специальный налоговый режим "Налог на профессиональный доход", именуемый в дальнейшем "Исполнитель", с другой стороны, заключили настоящий договор о нижеследующем.</p>
+        <h2>1. Предмет договора</h2>
+        <p>Настоящий договор является рамочным и заключается на ${escapeHtml(CONTRACT_YEAR)} год. Исполнитель обязуется по отдельным техническим заданиям Заказчика оказывать услуги по операционной поддержке пункта выдачи заказов (ПВЗ), включая:</p>
+        <ul>
+          <li>прием, выдачу и возврат заказов клиентам;</li>
+          <li>работу в информационной системе OZON;</li>
+          <li>обеспечение чистоты и порядка в помещении ПВЗ;</li>
+          <li>подготовку отчетных документов о результатах деятельности ПВЗ.</li>
+        </ul>
+        <p>Конкретный перечень задач, отчетный период, стоимость результата и ожидаемые результаты указываются в отдельных Технических заданиях, являющихся неотъемлемыми приложениями к настоящему договору. Заказчик обязуется принять и оплатить надлежаще оказанный результат услуг по подписанным актам.</p>
+        <p>Услуги оказываются Исполнителем самостоятельно. Настоящий договор не является трудовым договором, не устанавливает рабочее место, график работы, режим рабочего времени, подчинение правилам внутреннего трудового распорядка Заказчика, гарантии и компенсации, предусмотренные трудовым законодательством.</p>
+        <h2>2. Стоимость и порядок оплаты</h2>
+        <p>Общая цена настоящего договора заранее не устанавливается. Стоимость услуг за каждый отчетный период определяется в соответствующем Техническом задании и подтверждается актом оказанных услуг.</p>
+        <p>Оплата производится после подписания акта оказанных услуг и передачи Исполнителем чека, сформированного в приложении "Мой налог". НДС не предъявляется. Стоимость услуг не является окладом, заработной платой, оплатой рабочего времени или гарантированным периодическим платежом.</p>
+        <h2>3. Технические задания и приемка услуг</h2>
+        <p>Технические задания оформляются на отдельные отчетные периоды и определяют согласованный результат услуг. По окончании соответствующего периода стороны подписывают акт оказанных услуг. При наличии замечаний Заказчик направляет Исполнителю мотивированный перечень замечаний.</p>
+        <h2>4. Статус Исполнителя</h2>
+        <p>Исполнитель подтверждает, что является плательщиком налога на профессиональный доход, самостоятельно исполняет налоговые обязанности и обязуется незамедлительно уведомить Заказчика об утрате данного статуса.</p>
+        <h2>5. Срок действия договора</h2>
+        <p>Договор действует с ${escapeHtml(formatDate(contractDate))} по ${escapeHtml(formatDate(CONTRACT_END_DATE))}. Обязательства по оплате и передаче закрывающих документов сохраняют силу до полного исполнения сторонами.</p>
+        <h2>6. Реквизиты и подписи</h2>
+        ${requisitesTable(context)}
+      `);
+    }
+
+    function buildTaskDocument(context) {
+      const contractDate = getContractDate(context);
+      return wrapDocumentHtml(`Техническое задание ${documentNumber(context, "ТЗ")}`, `
+        <h1>Техническое задание № ${escapeHtml(documentNumber(context, "ТЗ"))}</h1>
+        <p>к договору оказания услуг № ${escapeHtml(contractNumber(context))} от ${escapeHtml(formatDate(contractDate))} за отчетный период ${escapeHtml(getWeekLabel(context.weekStart))}</p>
+        <h2>1. Стороны</h2>
+        <p>Заказчик: ${escapeHtml(context.company.legalName || context.company.alias)}.</p>
+        <p>Исполнитель: ${escapeHtml(context.employee.fullName || context.employee.shortName)}.</p>
+        <h2>2. Задачи Исполнителя</h2>
+        <p>В течение отчетного периода (календарная неделя) Исполнитель обязуется:</p>
+        <ul>
+          <li>обеспечивать операционную поддержку ПВЗ в пределах согласованного результата по настоящему ТЗ, включая действия по открытию и закрытию помещения при необходимости;</li>
+          <li>осуществлять прием, выдачу и возврат заказов клиентам в соответствии с регламентами Заказчика и маркетплейса OZON;</li>
+          <li>вести учет материальных ценностей, находящихся в ПВЗ;</li>
+          <li>своевременно вносить все операции в информационную систему OZON;</li>
+          <li>взаимодействовать с технической поддержкой маркетплейса при возникновении нештатных ситуаций;</li>
+          <li>поддерживать чистоту и порядок в помещении ПВЗ;</li>
+          <li>по окончании отчетного периода подготовить и передать Заказчику отчет о деятельности ПВЗ.</li>
+        </ul>
+        <h2>3. Ожидаемый результат</h2>
+        <p>ПВЗ функционировал в штатном режиме в течение всего отчетного периода, все операции с заказами (прием, выдача, возврат) выполнены своевременно и без ошибок, отчетность передана Заказчику. Заказчик не получал обоснованных жалоб от клиентов и не был привлечен к ответственности маркетплейсом за нарушения регламентов.</p>
+        <h2>4. Стоимость результата</h2>
+        <p>Стоимость результата услуг за отчетный период составляет <strong>${escapeHtml(formatRub(context.summary.total))}</strong>, НДС не облагается.</p>
+      `);
+    }
+
+    function buildActDocument(context) {
+      const contractDate = getContractDate(context);
+      return wrapDocumentHtml(`Акт ${documentNumber(context, "А")}`, `
+        <h1>Акт оказанных услуг № ${escapeHtml(documentNumber(context, "А"))}</h1>
+        <p>г. Москва <span class="right">${escapeHtml(formatDate(context.weekEnd))}</span></p>
+        <p>${partyCompany(context.company)} и ${partyEmployee(context.employee)} составили настоящий акт о том, что Исполнитель оказал услуги по техническому заданию к договору № ${escapeHtml(contractNumber(context))} от ${escapeHtml(formatDate(contractDate))} за период ${escapeHtml(getWeekLabel(context.weekStart))}.</p>
+        <h2>1. Результат оказанных услуг</h2>
+        <p>Услуги оказаны в полном объеме, в установленные сроки и с надлежащим качеством. Исполнителем обеспечено:</p>
+        <ul>
+          <li>надлежащее функционирование пункта выдачи заказов (ПВЗ) в пределах результата, согласованного сторонами в ТЗ;</li>
+          <li>своевременное выполнение всех операций по приему, выдаче и возврату заказов;</li>
+          <li>корректное ведение учета в информационной системе OZON (все операции внесены в день их совершения);</li>
+          <li>соблюдение регламентов Заказчика и маркетплейса, отсутствие обоснованных жалоб клиентов и штрафных санкций со стороны маркетплейса;</li>
+          <li>передача Заказчику отчетных документов по итогам периода.</li>
+        </ul>
+        <h2>2. Стоимость услуг</h2>
+        <p>Стоимость услуг за отчетный период составляет <strong>${escapeHtml(formatRub(context.summary.total))}</strong>, НДС не облагается.</p>
+        <table>
+          <thead><tr><th>Исполнитель</th><th>Период</th><th>Сумма</th></tr></thead>
+          <tbody><tr><td>${escapeHtml(context.employee.fullName)}</td><td>${escapeHtml(getWeekLabel(context.weekStart))}</td><td class="num">${escapeHtml(formatRub(context.summary.total))}</td></tr></tbody>
+        </table>
+        <h2>3. Обязательства Исполнителя</h2>
+        <p>Исполнитель обязуется сформировать и передать Заказчику чек по налогу на профессиональный доход на указанную сумму в течение 5 рабочих дней с даты подписания настоящего Акта.</p>
+        <h2>4. Претензии</h2>
+        <p>Стороны подтверждают, что претензий по объему, срокам и качеству оказанных услуг на дату подписания Акта не имеют.</p>
+        <h2>5. Реквизиты и подписи</h2>
+        ${requisitesTable(context)}
+      `);
+    }
+
+    function wrapDocumentHtml(title, body) {
+      return `<!doctype html>
+        <html lang="ru">
+        <head>
+          <meta charset="utf-8">
+          <title>${escapeHtml(title)}</title>
+          <style>
+            @page { size: A4; margin: 18mm 16mm; }
+            body { font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.35; color: #111; }
+            h1 { text-align: center; font-size: 16pt; margin: 0 0 14pt; }
+            h2 { font-size: 13pt; margin: 12pt 0 6pt; }
+            table { width: 100%; border-collapse: collapse; margin: 8pt 0; }
+            th, td { border: 1px solid #333; padding: 5pt; vertical-align: top; }
+            th { background: #f0f0f0; }
+            .num { text-align: right; }
+            .right { float: right; }
+            .sign { height: 42pt; }
+            .pdf-document { page-break-after: always; break-after: page; }
+            .pdf-document:last-child { page-break-after: auto; break-after: auto; }
+          </style>
+        </head>
+        <body>${body}</body>
+        </html>`;
+    }
+
+    function requisitesTable(context) {
+      return `
+        <table>
+          <thead><tr><th>Заказчик</th><th>Исполнитель</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>${companyRequisitesHtml(context.company)}</td>
+              <td>${employeeRequisitesHtml(context.employee)}</td>
+            </tr>
+            <tr>
+              <td class="sign">Подпись: ____________________ / ${escapeHtml(context.company.signatory || "________________")}</td>
+              <td class="sign">Подпись: ____________________ / ${escapeHtml(context.employee.fullName || "________________")}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    function signatureBlock(context) {
+      return `
+        <table>
+          <tr><td class="sign">Заказчик: ____________________ / ${escapeHtml(context.company.signatory || "________________")}</td><td class="sign">Исполнитель: ____________________ / ${escapeHtml(context.employee.fullName || "________________")}</td></tr>
+        </table>
+      `;
+    }
+
+    function companyRequisitesHtml(company) {
+      return [
+        company.legalName,
+        `ИНН: ${blank(company.inn)}`,
+        `ОГРН/ОГРНИП: ${blank(company.ogrn)}`,
+        `Адрес: ${blank(company.address)}`,
+        `Почтовый адрес: ${blank(company.postalAddress || company.address)}`,
+        `Эл. почта: ${blank(company.email)}`,
+        `Телефон: ${blank(company.phone)}`,
+        `Банк: ${blank(company.bank)}`,
+        `р/с: ${blank(company.account)}`,
+        `к/с: ${blank(company.corrAccount)}`,
+        `БИК: ${blank(company.bik)}`,
+        `ИНН банка: ${blank(company.bankInn)}`,
+        `КПП банка: ${blank(company.bankKpp)}`
+      ].map((line) => escapeHtml(line || "Заполнить")).join("<br>");
+    }
+
+    function employeeRequisitesHtml(employee) {
+      return [
+        employee.fullName,
+        employee.taxStatus,
+        `ИНН: ${blank(employee.inn)}`,
+        `СНИЛС: ${blank(employee.snils)}`,
+        `Паспорт: ${blank(employee.passport)}, выдан ${blank(employee.passportIssuer)}, ${formatDate(employee.passportDate)}`,
+        `Адрес: ${blank(employee.address)}`,
+        `Банк: ${blank(employee.bank)}`,
+        `р/с: ${blank(employee.account)}`,
+        `к/с: ${blank(employee.corrAccount)}`,
+        `БИК: ${blank(employee.bik)}`
+      ].map((line) => escapeHtml(line || "Заполнить")).join("<br>");
+    }
+
+    function partyCompany(company) {
+      return `${company.legalName || company.alias}, ИНН ${blank(company.inn)}, ОГРН/ОГРНИП ${blank(company.ogrn)}, в лице ${blank(company.signatory)}`;
+    }
+
+    function partyEmployee(employee) {
+      return `${employee.fullName || employee.shortName}, ИНН ${blank(employee.inn)}, паспорт ${blank(employee.passport)}`;
+    }
+
+    function getDocumentMissingFields(row) {
+      const company = state.requisites.companies[row.company] || {};
+      const employee = state.requisites.employees[row.employee] || {};
+      const missing = [];
+      [["legalName", "наименование компании"], ["inn", "ИНН компании"], ["ogrn", "ОГРН/ОГРНИП компании"], ["address", "адрес компании"], ["bank", "банк компании"], ["account", "счет компании"], ["bik", "БИК компании"], ["signatory", "подписант компании"]].forEach(([field, label]) => {
+        if (!company[field]) missing.push(label);
+      });
+      [["fullName", "ФИО исполнителя"], ["inn", "ИНН исполнителя"], ["passport", "паспорт исполнителя"], ["address", "адрес исполнителя"], ["bank", "банк исполнителя"], ["account", "счет исполнителя"], ["bik", "БИК исполнителя"]].forEach(([field, label]) => {
+        if (!employee[field]) missing.push(label);
+      });
+      return missing;
+    }
+
+    function documentNumber(context, prefix) {
+      if (prefix === "Д") return contractNumber(context);
+      const docType = { "Д": "contract", "ТЗ": "task", "А": "act" }[prefix] || "document";
+      return getShortDocumentNumber(context, docType);
+    }
+
+    function contractNumber(context) {
+      return getContractDetails(context).number;
+    }
+
+    function getContractDate(context) {
+      return getContractDetails(context).date;
+    }
+
+    function getContractDetails(context) {
+      const employee = context?.summary?.employee || context?.employee?.shortName || "";
+      const company = context?.summary?.company || context?.company?.alias || "";
+      return getEmployeeCompanyContract(employee, company);
+    }
+
+    function getEmployeeCompanyContract(employee, company) {
+      const fallback = getDefaultContractDetails(employee, company, state?.shifts || []);
+      const saved = state?.requisites?.employees?.[employee]?.contracts?.[company];
+      return {
+        number: String(saved?.number || fallback.number || "").trim(),
+        date: normalizeContractDate(saved?.date, fallback.date)
+      };
+    }
+
+    function getShortDocumentNumber(context, docType) {
+      const key = getDocumentKey(context, docType);
+      const company = context.summary?.company || context.company?.alias || "";
+      const allKeys = getDocumentKeys(docType, company);
+      const index = allKeys.indexOf(key);
+      const sequence = index >= 0 ? index + 1 : shortHashNumber(key);
+      return formatShortDocumentNumber(docType, company, sequence);
+    }
+
+    function formatShortDocumentNumber(docType, company, sequence) {
+      const prefix = { contract: "D", task: "T", act: "A" }[docType] || "X";
+      const series = COMPANY_DOCUMENT_SERIES[company] || "00";
+      return prefix + series + Number(sequence || 0).toString(36).toUpperCase().padStart(3, "0").slice(-3);
+    }
+
+    function getDocumentKeys(docType, company) {
+      const keys = new Set();
+      getWeekSummaryRows(false)
+        .filter((row) => !company || row.company === company)
+        .forEach((row) => {
+          keys.add(getDocumentKeyFromParts(docType, row.weekStart, row.employee, row.company));
+        });
+      return [...keys].sort();
+    }
+
+    function getDocumentKey(context, docType) {
+      return getDocumentKeyFromParts(docType, context.weekStart, context.summary.employee, context.summary.company);
+    }
+
+    function getDocumentKeyFromParts(docType, weekStart, employee, company) {
+      const period = docType === "contract" ? CONTRACT_YEAR : weekStart;
+      return [docType, period, employee, company].join("|");
+    }
+
+    function shortHashNumber(value) {
+      let hash = 2166136261;
+      String(value).split("").forEach((char) => {
+        hash ^= char.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+      });
+      return (hash >>> 0) % 1679615 + 1;
+    }
+
+    function docFilePrefix(docType) {
+      return { contract: "Договор", task: "ТЗ", act: "Акт", package: "Пакет" }[docType] || "Документ";
+    }
+
+    function safeFileName(value) {
+      return String(value || "").replace(/[\\/:*?"<>|]+/g, "_").replace(/\s+/g, "_");
+    }
+
+    function blank(value) {
+      return value || "ЗАПОЛНИТЬ";
+    }
+
+    function downloadDoc(fileName, html) {
+      const blob = new Blob(["\ufeff" + html], { type: "application/msword;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function openPdfPrintWindow(fileName, html) {
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        addLog("Не удалось открыть окно PDF: браузер заблокировал новое окно", "error");
+        showToast("Разрешите всплывающее окно для PDF");
+        return false;
+      }
+      try {
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.document.title = fileName.replace(/\.pdf$/i, "");
+        const printDocument = () => {
+          printWindow.focus();
+          printWindow.print();
+        };
+        if (printWindow.document.readyState === "complete") {
+          setTimeout(printDocument, 200);
+        } else {
+          printWindow.addEventListener("load", () => setTimeout(printDocument, 200), { once: true });
+        }
+        return true;
+      } catch (error) {
+        addLog("Не удалось подготовить PDF: " + error.message, "error");
+        showToast("PDF не сформирован");
+        return false;
+      }
+    }
+
+    function getCsvRows() {
+      const activeMonth = MONTHS.find((month) => month.id === ui.activeTab);
+      if (activeMonth) {
+        return [
+          ["ФИО", "Дата", "День недели", "Компания", "Часы", "Ставка", "Сумма за день", "Неделя", "Сумма за неделю по компании", "Статус оплаты"],
+          ...getVisibleRows(activeMonth.id).map((row) => {
+            const weekStart = getWeekStart(row.date);
+            const paymentKey = getPaymentKey(weekStart, row.employee, row.company);
+            return [
+              row.employee,
+              formatDate(row.date),
+              getDayName(row.date),
+              row.company,
+              row.hours,
+              row.rate,
+              getDayAmount(row),
+              getWeekLabel(weekStart),
+              getEmployeeCompanyWeekSum(row.employee, row.company, weekStart),
+              PAYMENT_STATUSES[getPaymentStatus(paymentKey, weekStart)].label
+            ];
+          })
+        ];
+      }
+      if (ui.activeTab === "summary") {
+        return [
+          ["Неделя", "Статус недели", "ФИО", "Компания", "Смены", "Часы", "Итого", "Статус оплаты"],
+          ...getSortedWeekSummaryRows().map((row) => {
+            const paymentKey = getPaymentKey(row.weekStart, row.employee, row.company);
+            return [
+              getWeekLabel(row.weekStart),
+              isFullWeek(row.weekStart) ? "полная" : "неполная",
+              row.employee,
+              row.company,
+              row.shifts,
+              row.hours,
+              row.total,
+              PAYMENT_STATUSES[getPaymentStatus(paymentKey, row.weekStart)].label
+            ];
+          })
+        ];
+      }
+      if (ui.activeTab === "checks") {
+        const checks = validateSchedule();
+        return [
+          ["Тип", "Строка", "Описание"],
+          ...checks.errors.map((item) => ["Ошибка", item.rowId, item.message]),
+          ...checks.warnings.map((item) => ["Предупреждение", item.rowId, item.message])
+        ];
+      }
+      return [
+        ["Время", "Уровень", "Сообщение"],
+        ...state.logs.map((item) => [item.time, levelLabel(item.level), item.message])
+      ];
+    }
+
+    function fieldLabel(field) {
+      return {
+        employee: "ФИО",
+        date: "дата",
+        company: "компания",
+        hours: "часы",
+        rate: "ставка"
+      }[field] || field;
+    }
+
+    function sortShifts(shifts) {
+      return [...shifts].sort((a, b) => a.date.localeCompare(b.date) || EMPLOYEES.indexOf(a.employee) - EMPLOYEES.indexOf(b.employee) || a.company.localeCompare(b.company));
+    }
+
+    function parseIso(iso) {
+      const [year, month, day] = iso.split("-").map(Number);
+      return new Date(Date.UTC(year, month - 1, day));
+    }
+
+    function toIso(date) {
+      return date.toISOString().slice(0, 10);
+    }
+
+    function addDays(date, days) {
+      return new Date(date.getTime() + days * 86400000);
+    }
+
+    function isValidIsoDate(value) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return false;
+      return toIso(parseIso(value)) === value;
+    }
+
+    function getWeekStart(iso) {
+      if (!isValidIsoDate(iso)) return "";
+      const date = parseIso(iso);
+      const day = date.getUTCDay();
+      const offset = day === 0 ? -6 : 1 - day;
+      return toIso(addDays(date, offset));
+    }
+
+    function isFullWeek(weekStart) {
+      if (!isValidIsoDate(weekStart)) return false;
+      const weekEnd = toIso(addDays(parseIso(weekStart), 6));
+      return weekStart >= START_DATE && weekEnd <= END_DATE;
+    }
+
+    function isEmployeeActiveFullWeek(employee, weekStart) {
+      return isFullWeek(weekStart) && EMPLOYEE_START_DATES[employee] <= weekStart;
+    }
+
+    function getWeekLabel(weekStart) {
+      if (!isValidIsoDate(weekStart)) return "нет недели";
+      return `${formatDate(weekStart)} - ${formatDate(toIso(addDays(parseIso(weekStart), 6)))}`;
+    }
+
+    function formatShortWeek(weekStart) {
+      if (!isValidIsoDate(weekStart)) return "";
+      return `${formatDate(weekStart).slice(0, 5)}-${formatDate(toIso(addDays(parseIso(weekStart), 6))).slice(0, 5)}`;
+    }
+
+    function getDayName(iso) {
+      if (!isValidIsoDate(iso)) return "";
+      const value = dayFormat.format(parseIso(iso));
+      return value.charAt(0).toUpperCase() + value.slice(1);
+    }
+
+    function formatDate(iso) {
+      if (!isValidIsoDate(iso)) return iso || "";
+      return dateFormat.format(parseIso(iso));
+    }
+
+    function formatRub(value) {
+      return currency.format(Number(value || 0));
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function escapeCsv(value) {
+      const text = String(value ?? "");
+      if (/[;"\n\r]/.test(text)) return `"${text.replaceAll('"', '""')}"`;
+      return text;
+    }
+
+    function levelClass(level) {
+      return { info: "info", warning: "warn", error: "error" }[level] || "info";
+    }
+
+    function levelLabel(level) {
+      return { info: "Инфо", warning: "Важно", error: "Ошибка" }[level] || "Инфо";
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+  </script>
+</body>
+</html>
