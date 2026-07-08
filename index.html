@@ -200,6 +200,49 @@
       gap: 8px;
     }
 
+    .access-note {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid #f2d28b;
+      border-radius: 7px;
+      background: #fff9ea;
+      color: #684800;
+      font-size: 13px;
+    }
+
+    .admin-user-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .admin-user-card {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(360px, 2fr);
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .access-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+    }
+
+    .access-check {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 7px 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      font-size: 13px;
+    }
+
     .cloud-dot {
       display: inline-block;
       width: 8px;
@@ -795,7 +838,8 @@
 
       .log-list li,
       .chart-row,
-      .doc-row {
+      .doc-row,
+      .admin-user-card {
         grid-template-columns: 1fr;
       }
 
@@ -886,8 +930,11 @@
   <script>
     const SUPABASE_URL = "https://mpsopvezhguzkkhvjnwy.supabase.co";
     const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_w8RqhkEDNm1iXYVlqRzZNw_M0Vr04mE";
-    const CLOUD_TABLE = "app_states";
+    const CLOUD_TABLE = "workspace_states";
+    const LEGACY_CLOUD_TABLE = "app_states";
+    const ACCESS_TABLE = "user_access";
     const CLOUD_STATE_KEY = "main";
+    const ADMIN_EMAIL = "amankz2015@gmail.com";
     const START_DATE = "2026-06-01";
     const END_DATE = "2026-08-31";
     const CONTRACT_YEAR = "2026";
@@ -912,7 +959,17 @@
       { id: "requisites", title: "Реквизиты" },
       { id: "documents", title: "Документы" },
       { id: "checks", title: "Проверка" },
+      { id: "admin", title: "Доступ" },
       { id: "log", title: "Лог" }
+    ];
+    const ACCESS_SECTIONS = [
+      { id: "schedule", title: "Смены по месяцам", description: "просмотр и редактирование смен" },
+      { id: "summary", title: "Свод по неделям", description: "недельные суммы и статусы оплат" },
+      { id: "requisites", title: "Реквизиты", description: "данные компаний и сотрудников" },
+      { id: "documents", title: "Документы", description: "договоры, акты и технические задания" },
+      { id: "checks", title: "Проверка", description: "контроль ошибок расписания" },
+      { id: "log", title: "Лог", description: "журнал действий" },
+      { id: "admin", title: "Администрирование", description: "назначение прав пользователям" }
     ];
     const WEEK_STARTS = [
       "2026-06-01", "2026-06-08", "2026-06-15", "2026-06-22", "2026-06-29",
@@ -936,6 +993,8 @@
     let renderQueued = false;
     let supabaseClient = createSupabaseClient();
     let currentUser = null;
+    let currentAccess = null;
+    let accessUsers = [];
     let cloudSaveTimer = 0;
     let lastCloudSync = "";
 
@@ -948,6 +1007,10 @@
     document.addEventListener("click", (event) => {
       const tabButton = event.target.closest("[data-tab]");
       if (tabButton) {
+        if (!canAccessTab(tabButton.dataset.tab)) {
+          showToast("Нет доступа к этому разделу");
+          return;
+        }
         ui.activeTab = tabButton.dataset.tab;
         renderApp();
         return;
@@ -975,16 +1038,33 @@
         return;
       }
       if (action === "sync-now") {
+        if (!hasAnyAppAccess()) {
+          showToast("Доступ к данным еще не выдан");
+          return;
+        }
         void saveCloudState({ showSuccess: true });
         return;
       }
       if (action === "load-cloud") {
+        if (!hasAnyAppAccess()) {
+          showToast("Доступ к данным еще не выдан");
+          return;
+        }
         void loadCloudState({ showSuccess: true });
         return;
       }
+      if (action === "refresh-access") {
+        void refreshAccessAndRender();
+        return;
+      }
 
-      if (!currentUser) {
-        showToast("Войдите для доступа к данным");
+      if (!currentUser || !hasAnyAppAccess()) {
+        showToast(currentUser ? "Доступ к данным еще не выдан" : "Войдите для доступа к данным");
+        return;
+      }
+
+      if (!canUseAction(action)) {
+        showToast("Нет доступа к этому действию");
         return;
       }
 
@@ -1002,6 +1082,7 @@
     document.addEventListener("input", (event) => {
       const contractField = event.target.dataset.contractField;
       if (contractField) {
+        if (!canAccessSection("requisites")) return;
         const savedValue = updateEmployeeContract(event.target.dataset.contractEmployee, event.target.dataset.contractCompany, contractField, event.target.value);
         if (savedValue !== undefined) event.target.value = savedValue;
         return;
@@ -1009,6 +1090,7 @@
 
       const requisiteField = event.target.dataset.requisiteField;
       if (requisiteField) {
+        if (!canAccessSection("requisites")) return;
         updateRequisite(event.target.dataset.requisiteType, event.target.dataset.requisiteKey, requisiteField, event.target.value);
         return;
       }
@@ -1016,6 +1098,7 @@
       const field = event.target.dataset.field;
       const rowId = event.target.closest("[data-id]")?.dataset.id;
       if (!field || !rowId) return;
+      if (!canAccessSection("schedule")) return;
       updateShift(rowId, field, event.target.value, false);
       refreshVisibleComputations();
     });
@@ -1036,14 +1119,25 @@
         renderApp();
         return;
       }
+      const accessUserId = event.target.dataset.accessUser;
+      if (accessUserId && event.target.dataset.accessAdmin !== undefined) {
+        void updateUserAccess(accessUserId, { isAdmin: event.target.checked });
+        return;
+      }
+      if (accessUserId && event.target.dataset.accessSection) {
+        void updateUserAccess(accessUserId, { section: event.target.dataset.accessSection, enabled: event.target.checked });
+        return;
+      }
       const contractField = event.target.dataset.contractField;
       if (contractField) {
+        if (!canAccessSection("requisites")) return;
         const savedValue = updateEmployeeContract(event.target.dataset.contractEmployee, event.target.dataset.contractCompany, contractField, event.target.value);
         if (savedValue !== undefined) event.target.value = savedValue;
         return;
       }
       const paymentKey = event.target.dataset.paymentKey;
       if (paymentKey) {
+        if (!canAccessSection("summary") && !canAccessSection("schedule")) return;
         updatePaymentStatus(paymentKey, event.target.value);
         return;
       }
@@ -1051,6 +1145,7 @@
       const field = event.target.dataset.field;
       const rowId = event.target.closest("[data-id]")?.dataset.id;
       if (!field || !rowId) return;
+      if (!canAccessSection("schedule")) return;
       updateShift(rowId, field, event.target.value, true);
       renderApp();
     });
@@ -1083,16 +1178,24 @@
         const { data, error } = await supabaseClient.auth.getSession();
         if (error) throw error;
         currentUser = data.session?.user || null;
+        currentAccess = null;
         renderAuthPanel();
         if (currentUser) {
-          setupStaticControls();
-          await loadCloudState();
+          await loadUserAccess();
+          if (hasAnyAppAccess()) {
+            setupStaticControls();
+            await loadCloudState();
+          }
         }
         supabaseClient.auth.onAuthStateChange((event, session) => {
           currentUser = session?.user || null;
+          if (!currentUser) {
+            currentAccess = null;
+            accessUsers = [];
+          }
           renderAuthPanel();
           if (currentUser && event !== "INITIAL_SESSION") {
-            void loadCloudState();
+            void refreshAccessAndLoad();
           }
           if (!currentUser) updateSaveState("Сохранено в браузере");
         });
@@ -1102,8 +1205,172 @@
       }
     }
 
+    function normalizeEmail(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function allAccessSectionIds() {
+      return ACCESS_SECTIONS.map((section) => section.id);
+    }
+
+    function normalizeAccess(row) {
+      const sections = Array.isArray(row?.sections) ? row.sections.filter((section) => allAccessSectionIds().includes(section)) : [];
+      const email = normalizeEmail(row?.email || currentUser?.email);
+      const isBootstrapAdmin = email === ADMIN_EMAIL && row?.is_admin === true;
+      const isAdmin = Boolean(row?.is_admin || isBootstrapAdmin);
+      return {
+        userId: row?.user_id || currentUser?.id || "",
+        email,
+        isAdmin,
+        sections: isAdmin ? allAccessSectionIds() : [...new Set(sections)]
+      };
+    }
+
+    function hasAnyAppAccess() {
+      return Boolean(currentUser && currentAccess && (currentAccess.isAdmin || currentAccess.sections.length > 0));
+    }
+
+    function isAccessAdmin() {
+      return Boolean(currentUser && currentAccess?.isAdmin);
+    }
+
+    function getTabSection(tabId) {
+      if (MONTHS.some((month) => month.id === tabId)) return "schedule";
+      return tabId;
+    }
+
+    function canAccessSection(sectionId) {
+      if (!currentUser || !currentAccess) return false;
+      if (currentAccess.isAdmin) return true;
+      return currentAccess.sections.includes(sectionId);
+    }
+
+    function canAccessTab(tabId) {
+      return canAccessSection(getTabSection(tabId));
+    }
+
+    function getVisibleTabs() {
+      return TABS.filter((tab) => canAccessTab(tab.id));
+    }
+
+    function firstVisibleTabId() {
+      return getVisibleTabs()[0]?.id || "";
+    }
+
+    function ensureAccessibleTab() {
+      if (!canAccessTab(ui.activeTab)) {
+        ui.activeTab = firstVisibleTabId() || "2026-06";
+      }
+    }
+
+    function shouldShowMetrics() {
+      return canAccessSection("schedule") || canAccessSection("summary") || canAccessSection("checks");
+    }
+
+    function canUseAction(action) {
+      if (["add-row", "delete-row", "reset"].includes(action)) return canAccessSection("schedule");
+      if (["export-doc"].includes(action)) return canAccessSection("documents");
+      if (["export-csv", "print"].includes(action)) return canAccessTab(ui.activeTab);
+      return true;
+    }
+
+    async function refreshAccessAndLoad() {
+      await loadUserAccess();
+      if (hasAnyAppAccess()) {
+        await loadCloudState();
+      } else {
+        renderAuthPanel();
+        updateSaveState("Доступ к данным не выдан");
+      }
+    }
+
+    async function refreshAccessAndRender() {
+      await loadUserAccess();
+      if (hasAnyAppAccess()) await loadCloudState();
+      else renderAuthPanel();
+      showToast("Права доступа обновлены");
+    }
+
+    async function loadUserAccess() {
+      currentAccess = null;
+      accessUsers = [];
+      if (!supabaseClient || !currentUser) return false;
+      try {
+        const { data, error } = await supabaseClient
+          .from(ACCESS_TABLE)
+          .select("user_id,email,is_admin,sections,created_at,updated_at")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+        if (error) throw error;
+        currentAccess = normalizeAccess(data || { user_id: currentUser.id, email: currentUser.email, is_admin: false, sections: [] });
+        if (isAccessAdmin()) await loadAccessUsers();
+        renderAuthPanel();
+        return true;
+      } catch (error) {
+        currentAccess = normalizeAccess({ user_id: currentUser.id, email: currentUser.email, is_admin: false, sections: [] });
+        addLog("Не удалось загрузить права доступа: " + error.message, "error");
+        updateSaveState("Ошибка прав доступа");
+        renderAuthPanel();
+        return false;
+      }
+    }
+
+    async function loadAccessUsers() {
+      if (!supabaseClient || !isAccessAdmin()) return [];
+      try {
+        const { data, error } = await supabaseClient
+          .from(ACCESS_TABLE)
+          .select("user_id,email,is_admin,sections,created_at,updated_at")
+          .order("email", { ascending: true });
+        if (error) throw error;
+        accessUsers = (data || []).map((row) => normalizeAccess(row));
+        return accessUsers;
+      } catch (error) {
+        addLog("Не удалось загрузить список пользователей: " + error.message, "error");
+        showToast("Список пользователей недоступен");
+        accessUsers = [];
+        return [];
+      }
+    }
+
+    async function updateUserAccess(userId, change) {
+      if (!supabaseClient || !isAccessAdmin()) {
+        showToast("Нет прав администратора");
+        return;
+      }
+      const user = accessUsers.find((item) => item.userId === userId);
+      if (!user) return;
+      const sections = new Set(user.sections);
+      let isAdmin = user.isAdmin;
+      if (Object.prototype.hasOwnProperty.call(change, "isAdmin")) {
+        isAdmin = Boolean(change.isAdmin);
+        if (isAdmin) allAccessSectionIds().forEach((section) => sections.add(section));
+      }
+      if (change.section) {
+        if (change.enabled) sections.add(change.section);
+        else sections.delete(change.section);
+      }
+      const nextSections = isAdmin ? allAccessSectionIds() : [...sections].filter((section) => allAccessSectionIds().includes(section));
+      try {
+        const { error } = await supabaseClient
+          .from(ACCESS_TABLE)
+          .update({ is_admin: isAdmin, sections: nextSections })
+          .eq("user_id", userId);
+        if (error) throw error;
+        addLog(`Права доступа обновлены для ${user.email}`, "info");
+        await loadAccessUsers();
+        if (userId === currentUser.id) currentAccess = normalizeAccess({ ...user, is_admin: isAdmin, sections: nextSections });
+        renderApp();
+        showToast("Права сохранены");
+      } catch (error) {
+        addLog("Не удалось сохранить права доступа: " + error.message, "error");
+        showToast("Права не сохранены");
+        renderApp();
+      }
+    }
+
     function renderAuthPanel() {
-      document.body?.classList.toggle("locked", !currentUser);
+      document.body?.classList.toggle("locked", !currentUser || !hasAnyAppAccess());
       const panel = document.getElementById("authPanel");
       if (!panel) return;
       if (!supabaseClient) {
@@ -1119,9 +1386,23 @@
       }
       panel.className = "auth-panel";
       if (currentUser) {
+        if (!hasAnyAppAccess()) {
+          panel.innerHTML = `
+            <div>
+              <div class="auth-title"><span class="cloud-dot"></span>Вход выполнен: ${escapeHtml(currentUser.email || "пользователь")}</div>
+              <div class="auth-help">Доступ к разделам еще не выдан. Новые пользователи после регистрации не видят данные, пока администратор не назначит права.</div>
+              <div class="access-note">Администратор: ${escapeHtml(ADMIN_EMAIL)}. После назначения прав нажмите «Обновить права».</div>
+            </div>
+            <div class="auth-actions">
+              <button type="button" data-action="refresh-access">Обновить права</button>
+              <button type="button" data-action="sign-out">Выйти</button>
+            </div>
+          `;
+          return;
+        }
         panel.innerHTML = `
           <div>
-            <div class="auth-title"><span class="cloud-dot synced"></span>Вход выполнен: ${escapeHtml(currentUser.email || "пользователь")}</div>
+            <div class="auth-title"><span class="cloud-dot synced"></span>Вход выполнен: ${escapeHtml(currentUser.email || "пользователь")}${isAccessAdmin() ? " · администратор" : ""}</div>
             <div class="auth-help">Данные синхронизируются между устройствами. ${lastCloudSync ? `Последняя синхронизация: ${escapeHtml(lastCloudSync)}.` : "После правок сохранение идет автоматически."}</div>
           </div>
           <div class="auth-actions">
@@ -1166,8 +1447,14 @@
         if (error) throw error;
         currentUser = data.user;
         addLog("Выполнен вход в облачную синхронизацию", "info");
-        await loadCloudState();
-        showToast("Вход выполнен");
+        await loadUserAccess();
+        if (hasAnyAppAccess()) {
+          await loadCloudState();
+          showToast("Вход выполнен");
+        } else {
+          showToast("Вход выполнен, доступ еще не выдан");
+          updateSaveState("Доступ к данным не выдан");
+        }
       } catch (error) {
         addLog("Ошибка входа: " + error.message, "error");
         showToast("Не удалось войти");
@@ -1187,7 +1474,10 @@
         if (error) throw error;
         currentUser = data.session?.user || null;
         addLog("Создан пользователь для облачной синхронизации", "info");
-        if (currentUser) await saveCloudState({ showSuccess: true });
+        if (currentUser) {
+          await loadUserAccess();
+          if (hasAnyAppAccess()) await saveCloudState({ showSuccess: true });
+        }
         showToast(currentUser ? "Регистрация выполнена" : "Проверьте email для подтверждения");
       } catch (error) {
         addLog("Ошибка регистрации: " + error.message, "error");
@@ -1201,31 +1491,49 @@
     async function signOutCloud() {
       if (!supabaseClient) return;
       try {
-        await saveCloudState();
+        if (hasAnyAppAccess()) {
+          try {
+            await saveCloudState();
+          } catch (saveError) {
+            addLog("Перед выходом не удалось сохранить в облако: " + saveError.message, "warning");
+          }
+        }
+        window.clearTimeout(cloudSaveTimer);
         const { error } = await supabaseClient.auth.signOut();
         if (error) throw error;
         currentUser = null;
+        currentAccess = null;
+        accessUsers = [];
         lastCloudSync = "";
         addLog("Выход из облачной синхронизации", "info");
         updateSaveState("Сохранено в браузере");
         showToast("Вы вышли из аккаунта");
       } catch (error) {
         addLog("Ошибка выхода: " + error.message, "error");
-        showToast("Не удалось выйти");
+        try {
+          await supabaseClient.auth.signOut({ scope: "local" });
+        } catch (localError) {
+          addLog("Локальная очистка сессии: " + localError.message, "warning");
+        }
+        currentUser = null;
+        currentAccess = null;
+        accessUsers = [];
+        lastCloudSync = "";
+        updateSaveState("Сохранено в браузере");
+        showToast("Вы вышли из аккаунта");
       } finally {
         renderAuthPanel();
       }
     }
 
     async function loadCloudState(options = {}) {
-      if (!supabaseClient || !currentUser) return false;
+      if (!supabaseClient || !currentUser || !hasAnyAppAccess()) return false;
       try {
         updateSaveState("Загрузка из облака...");
         const { data, error } = await supabaseClient
           .from(CLOUD_TABLE)
           .select("data, updated_at")
-          .eq("user_id", currentUser.id)
-          .eq("state_key", CLOUD_STATE_KEY)
+          .eq("workspace_key", CLOUD_STATE_KEY)
           .maybeSingle();
         if (error) throw error;
         if (data?.data) {
@@ -1236,10 +1544,18 @@
           renderApp();
           if (options.showSuccess) showToast("Данные загружены из облака");
         } else {
-          await saveCloudState({ showSuccess: false });
-          addLog("Создана первая облачная копия данных", "info");
-          if (options.showSuccess) showToast("Облачная копия создана");
-          renderApp();
+          const migrated = await loadLegacyCloudState();
+          if (migrated) {
+            await saveCloudState({ showSuccess: false });
+            addLog("Старая облачная копия перенесена в общее хранилище", "info");
+            if (options.showSuccess) showToast("Данные перенесены в общее хранилище");
+            renderApp();
+          } else {
+            await saveCloudState({ showSuccess: false });
+            addLog("Создана первая облачная копия данных", "info");
+            if (options.showSuccess) showToast("Облачная копия создана");
+            renderApp();
+          }
         }
         updateSaveState(lastCloudSync ? "Синхронизировано: " + lastCloudSync : "Синхронизировано");
         renderAuthPanel();
@@ -1253,8 +1569,27 @@
       }
     }
 
+    async function loadLegacyCloudState() {
+      if (!supabaseClient || !currentUser) return false;
+      try {
+        const { data, error } = await supabaseClient
+          .from(LEGACY_CLOUD_TABLE)
+          .select("data, updated_at")
+          .eq("user_id", currentUser.id)
+          .eq("state_key", CLOUD_STATE_KEY)
+          .maybeSingle();
+        if (error || !data?.data) return false;
+        state = normalizeState(data.data);
+        saveStateLocalOnly();
+        lastCloudSync = formatSyncTime(data.updated_at);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
     function scheduleCloudSave() {
-      if (!supabaseClient || !currentUser) return;
+      if (!supabaseClient || !currentUser || !hasAnyAppAccess()) return;
       window.clearTimeout(cloudSaveTimer);
       cloudSaveTimer = window.setTimeout(() => {
         void saveCloudState().catch((error) => {
@@ -1265,17 +1600,17 @@
     }
 
     async function saveCloudState(options = {}) {
-      if (!supabaseClient || !currentUser) return false;
+      if (!supabaseClient || !currentUser || !hasAnyAppAccess()) return false;
       const now = new Date().toISOString();
       const payload = {
-        user_id: currentUser.id,
-        state_key: CLOUD_STATE_KEY,
+        workspace_key: CLOUD_STATE_KEY,
         data: state,
+        updated_by: currentUser.id,
         updated_at: now
       };
       const { error } = await supabaseClient
         .from(CLOUD_TABLE)
-        .upsert(payload, { onConflict: "user_id,state_key" });
+        .upsert(payload, { onConflict: "workspace_key" });
       if (error) throw error;
       lastCloudSync = formatSyncTime(now);
       updateSaveState("Синхронизировано: " + lastCloudSync);
@@ -1511,20 +1846,42 @@
     }
 
     function renderApp() {
-      if (!currentUser) {
+      if (!currentUser || !hasAnyAppAccess()) {
         renderAuthPanel();
         return;
       }
+      ensureAccessibleTab();
       setupStaticControls();
       document.getElementById("employeeFilter").value = ui.employee;
       document.getElementById("companyFilter").value = ui.company;
       document.getElementById("weekFilter").value = ui.week;
+      updateGlobalControlsVisibility();
       renderTabs();
-      renderMetrics();
+      const metrics = document.getElementById("metrics");
+      if (shouldShowMetrics()) {
+        metrics.style.display = "";
+        renderMetrics();
+      } else {
+        metrics.style.display = "none";
+        metrics.innerHTML = "";
+      }
       renderPanel();
       renderAuthPanel();
       updateSaveState();
       renderQueued = false;
+    }
+
+    function updateGlobalControlsVisibility() {
+      const filters = document.querySelector(".filters");
+      if (filters) filters.style.display = (canAccessSection("schedule") || canAccessSection("summary") || canAccessSection("documents")) ? "" : "none";
+      const addButton = document.querySelector('[data-action="add-row"]');
+      const resetButton = document.querySelector('[data-action="reset"]');
+      const exportButton = document.querySelector('[data-action="export-csv"]');
+      const printButton = document.querySelector('[data-action="print"]');
+      if (addButton) addButton.style.display = canAccessSection("schedule") ? "" : "none";
+      if (resetButton) resetButton.style.display = canAccessSection("schedule") ? "" : "none";
+      if (exportButton) exportButton.style.display = canAccessTab(ui.activeTab) ? "" : "none";
+      if (printButton) printButton.style.display = canAccessTab(ui.activeTab) ? "" : "none";
     }
 
     function scheduleRender() {
@@ -1559,7 +1916,7 @@
     }
 
     function renderTabs() {
-      document.getElementById("tabs").innerHTML = TABS.map((tab) => `
+      document.getElementById("tabs").innerHTML = getVisibleTabs().map((tab) => `
         <button type="button" class="tab ${tab.id === ui.activeTab ? "active" : ""}" data-tab="${escapeHtml(tab.id)}">
           ${escapeHtml(tab.title)}
         </button>
@@ -1608,6 +1965,7 @@
       if (ui.activeTab === "requisites") renderRequisitesPanel();
       if (ui.activeTab === "documents") renderDocumentsPanel();
       if (ui.activeTab === "checks") renderChecksPanel();
+      if (ui.activeTab === "admin") renderAdminPanel();
       if (ui.activeTab === "log") renderLogPanel();
     }
 
@@ -1957,6 +2315,48 @@
           </div>
         </div>
         <ul class="log-list">${body}</ul>
+      `;
+    }
+
+    function renderAdminPanel() {
+      if (!isAccessAdmin()) {
+        document.getElementById("panel").innerHTML = `<div class="empty">Нет прав администратора</div>`;
+        return;
+      }
+      const body = accessUsers.map((user) => {
+        const sections = new Set(user.sections);
+        const accessChecks = ACCESS_SECTIONS.map((section) => `
+          <label class="access-check" title="${escapeHtml(section.description)}">
+            <input type="checkbox" data-access-user="${escapeHtml(user.userId)}" data-access-section="${escapeHtml(section.id)}" ${user.isAdmin || sections.has(section.id) ? "checked" : ""} ${user.isAdmin ? "disabled" : ""}>
+            <span>${escapeHtml(section.title)}</span>
+          </label>
+        `).join("");
+        return `
+          <article class="admin-user-card">
+            <div>
+              <div class="panel-title">${escapeHtml(user.email || "без email")}</div>
+              <div class="muted">${user.userId ? escapeHtml(user.userId) : "пользователь без id"}</div>
+              <label class="access-check">
+                <input type="checkbox" data-access-user="${escapeHtml(user.userId)}" data-access-admin ${user.isAdmin ? "checked" : ""}>
+                <span>Администратор</span>
+              </label>
+            </div>
+            <div class="access-grid">${accessChecks}</div>
+          </article>
+        `;
+      }).join("");
+      document.getElementById("panel").innerHTML = `
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Доступ пользователей</div>
+            <div class="muted">новые пользователи после регистрации не получают доступ автоматически</div>
+          </div>
+          <div class="panel-actions">
+            <button type="button" data-action="refresh-access">Обновить список</button>
+          </div>
+        </div>
+        <div class="legal-note">Администратор может выдавать доступ только зарегистрированным пользователям. Пользователь ${escapeHtml(ADMIN_EMAIL)} назначается администратором через SQL-схему Supabase.</div>
+        <div class="admin-user-list">${body || `<div class="empty">Пользователи пока не найдены</div>`}</div>
       `;
     }
 
