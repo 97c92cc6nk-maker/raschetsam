@@ -1398,14 +1398,21 @@
       return String(value || "").trim().toLowerCase();
     }
 
+    function isBootstrapAdminEmail(value = currentUser?.email) {
+      return normalizeEmail(value) === ADMIN_EMAIL;
+    }
+
     function allAccessSectionIds() {
       return ACCESS_SECTIONS.map((section) => section.id);
     }
 
     function normalizeAccess(row) {
       const sections = Array.isArray(row?.sections) ? row.sections.filter((section) => allAccessSectionIds().includes(section)) : [];
-      const email = normalizeEmail(row?.email || currentUser?.email);
-      const isBootstrapAdmin = email === ADMIN_EMAIL;
+      const shouldUseSessionEmail = !row?.user_id || row.user_id === currentUser?.id;
+      const rowEmail = normalizeEmail(row?.email);
+      const sessionEmail = shouldUseSessionEmail ? normalizeEmail(currentUser?.email) : "";
+      const isBootstrapAdmin = isBootstrapAdminEmail(rowEmail) || isBootstrapAdminEmail(sessionEmail);
+      const email = isBootstrapAdminEmail(sessionEmail) ? sessionEmail : (rowEmail || sessionEmail);
       const isAdmin = Boolean(row?.is_admin || isBootstrapAdmin);
       return {
         userId: row?.user_id || currentUser?.id || "",
@@ -1416,11 +1423,11 @@
     }
 
     function hasAnyAppAccess() {
-      return Boolean(currentUser && currentAccess && (currentAccess.isAdmin || currentAccess.sections.length > 0));
+      return Boolean(currentUser && (isBootstrapAdminEmail() || (currentAccess && (currentAccess.isAdmin || currentAccess.sections.length > 0))));
     }
 
     function isAccessAdmin() {
-      return Boolean(currentUser && currentAccess?.isAdmin);
+      return Boolean(currentUser && (isBootstrapAdminEmail() || currentAccess?.isAdmin));
     }
 
     function getTabSection(tabId) {
@@ -1429,7 +1436,9 @@
     }
 
     function canAccessSection(sectionId) {
-      if (!currentUser || !currentAccess) return false;
+      if (!currentUser) return false;
+      if (isBootstrapAdminEmail()) return true;
+      if (!currentAccess) return false;
       if (currentAccess.isAdmin) return true;
       return currentAccess.sections.includes(sectionId);
     }
