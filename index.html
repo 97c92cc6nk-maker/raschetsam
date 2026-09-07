@@ -885,8 +885,8 @@
   <div class="app">
     <header class="topbar">
       <div>
-        <h1>Расчеты</h1>
-        <div class="subtitle">Июнь, июль, август 2026</div>
+        <h1>Расчеты по договорам</h1>
+        <div class="subtitle">Июнь - ноябрь 2026</div>
       </div>
       <div class="toolbar" aria-label="Действия">
         <button type="button" class="primary" data-action="add-row">Добавить смену</button>
@@ -936,22 +936,204 @@
     const CLOUD_STATE_KEY = "main";
     const ADMIN_EMAIL = "amankz2015@gmail.com";
     const START_DATE = "2026-06-01";
-    const END_DATE = "2026-08-31";
+    const END_DATE = "2026-11-30";
     const CONTRACT_YEAR = "2026";
     const CONTRACT_END_DATE = "2026-12-31";
     const STORAGE_KEY = "self-employed-shifts-jja-2026-v4";
-    let EMPLOYEES = [];
-    let COMPANIES = [];
-    let COMPANY_DOCUMENT_SERIES = {};
-    let RATES = {};
+    const NEW_NUMBERING_START_DATE = "2026-09-07";
+    const DEFAULT_EMPLOYEE_ORDER = ["Денис", "Софья", "Асет"];
+    const DEFAULT_COMPANY_ORDER = ["ЛЕА", "ОИА", "КАА", "КСВ"];
+    const DEFAULT_RATES = { "ЛЕА": 420, "ОИА": 400, "КАА": 500, "КСВ": 500 };
+    const DEFAULT_COMPANY_DOCUMENT_SERIES = { "ЛЕА": "11", "ОИА": "22", "КАА": "33", "КСВ": "44" };
+    const COMPANY_DOCUMENT_NUMBERING = {
+      "КСВ": {
+        contract: { prefix: "РПЦ" },
+        act: { prefix: "ПР" }
+      },
+      "КАА": {
+        contract: { prefix: "D330" },
+        act: { prefix: "A11K" }
+      },
+      "ЛЕА": {
+        contract: { prefix: "" },
+        act: { prefix: "26", includeMonth: true }
+      },
+      "ОИА": {
+        contract: { prefix: "САМ" },
+        act: { prefix: "СЗ" }
+      }
+    };
+    const AUTUMN_2026_ASSIGNMENTS = {
+      "Денис": ["КАА", "КСВ"],
+      "Софья": ["КСВ", "КАА"],
+      "Асет": ["ЛЕА", "КСВ"]
+    };
+    const PARTIAL_WEEK_STARTS = new Set(["2026-08-31", "2026-11-30"]);
+    let EMPLOYEES = [...DEFAULT_EMPLOYEE_ORDER];
+    let COMPANIES = [...DEFAULT_COMPANY_ORDER];
+    let COMPANY_DOCUMENT_SERIES = { ...DEFAULT_COMPANY_DOCUMENT_SERIES };
+    let RATES = { ...DEFAULT_RATES };
     let EMPLOYEE_COMPANIES = {};
     let EMPLOYEE_START_DATES = {};
-    const DEFAULT_COMPANY_DETAILS = {};
-    const DEFAULT_EMPLOYEE_DETAILS = {};
+    const DEFAULT_COMPANY_DETAILS = {
+      "ЛЕА": {
+        alias: "ЛЕА",
+        legalName: "Индивидуальный предприниматель Лунева Елизавета Анатольевна",
+        shortName: "ИП Лунева Елизавета Анатольевна",
+        inn: "502421116640",
+        ogrn: "324508100452858",
+        address: "143441, Московская обл, г Красногорск, пгт. Путилково, д. 16Г",
+        postalAddress: "143441, Московская обл, г Красногорск, пгт. Путилково, д. 16Г",
+        actualAddress: "143441, Московская обл, г Красногорск, пгт. Путилково, д. 16Г",
+        bank: "ПАО Сбербанк",
+        account: "40802810240000482217",
+        corrAccount: "30101810400000000225",
+        bik: "044525225",
+        okpo: "2034848187",
+        okato: "46439000156",
+        oktmo: "46744000256",
+        email: "lunevaozon@mail.ru",
+        phone: "89268490108",
+        bankInn: "7707083893",
+        bankKpp: "773601001",
+        signatory: "Лунева Елизавета Анатольевна",
+        basis: "ОГРНИП",
+        serviceName: "операционная поддержка пункта выдачи заказов (ПВЗ)",
+        source: "PDF: Карточка ИП Лунева_edited.pdf, распознано локальным Windows OCR"
+      },
+      "ОИА": {
+        alias: "ОИА",
+        legalName: "Индивидуальный предприниматель Овчарова Ирина Александровна",
+        shortName: "ИП Овчарова Ирина Александровна",
+        inn: "860704058381",
+        ogrn: "324508100581373",
+        address: "Московская обл, г Красногорск, деревня Путилково, Спасо-Тушинский б-р, д 8, кв 350",
+        postalAddress: "Московская обл, г Красногорск, деревня Путилково, Спасо-Тушинский б-р, д 8, кв 350",
+        actualAddress: "Московская обл, г Красногорск, деревня Путилково, Спасо-Тушинский б-р, д 8, кв 350",
+        bank: "ПАО Сбербанк",
+        account: "40802810040000497693",
+        corrAccount: "30101810400000000225",
+        bik: "044525225",
+        okpo: "2036524613",
+        okato: "46439000156",
+        oktmo: "46744000256",
+        email: "irina1972www@mail.ru",
+        phone: "89011803966",
+        bankInn: "7707083893",
+        bankKpp: "773601001",
+        signatory: "Овчарова Ирина Александровна",
+        basis: "ОГРНИП",
+        serviceName: "операционная поддержка пункта выдачи заказов (ПВЗ)",
+        source: "PDF: Карточка ОИА.pdf, текст извлечен из встроенных PDF-шрифтов"
+      },
+      "КАА": {
+        alias: "КАА",
+        legalName: "Индивидуальный предприниматель Кислянская Анна Андреевна",
+        shortName: "ИП Кислянская Анна Андреевна",
+        inn: "434548598200",
+        ogrn: "325774600902195",
+        address: "117624, г. Москва, уд. Поляны, д. 5, кв. 1540",
+        postalAddress: "117624, г. Москва, уд. Поляны, д. 5, кв. 1540",
+        actualAddress: "117624, г. Москва, уд. Поляны, д. 5, кв. 1540",
+        bank: "ООО \"ОЗОН Банк\"",
+        account: "40802810100001775572",
+        corrAccount: "30101810645374525068",
+        bik: "044525068",
+        email: "annakislyanskaya007@mail.ru",
+        phone: "89771709955",
+        signatory: "Кислянская Анна Андреевна",
+        basis: "ОГРНИП",
+        serviceName: "операционная поддержка пункта выдачи заказов (ПВЗ)",
+        source: "DOCX: Реквизиты Кислянская.docx"
+      },
+      "КСВ": {
+        alias: "КСВ",
+        legalName: "Индивидуальный предприниматель Козлов Сергей Владимирович",
+        shortName: "ИП Козлов Сергей Владимирович",
+        inn: "773377933225",
+        ogrn: "325774600900461",
+        address: "125459, г. Москва, ул. Туристская, д. 14, к. 4, кв. 212",
+        postalAddress: "125459, г. Москва, ул. Туристская, д. 14, к. 4, кв. 212",
+        actualAddress: "125459, г. Москва, ул. Туристская, д. 14, к. 4, кв. 212",
+        bank: "ООО «ОЗОН БАНК»",
+        account: "40802810600001780889",
+        corrAccount: "30101810645374525068",
+        bik: "044525068",
+        okved: "47.91",
+        email: "s.kozlov95@mail.ru",
+        phone: "+79773609021",
+        signatory: "Козлов Сергей Владимирович",
+        basis: "ОГРНИП",
+        serviceName: "операционная поддержка пункта выдачи заказов (ПВЗ)",
+        source: "DOCX: Карточка Козлов.docx"
+      }
+    };
+    const DEFAULT_EMPLOYEE_DETAILS = {
+      "Денис": {
+        shortName: "Денис",
+        fullName: "Галах Денис Михайлович",
+        birthDate: "1985-03-16",
+        gender: "Мужской",
+        citizenship: "РБ",
+        inn: "502426147497",
+        snils: "227-431-642 53",
+        bank: "Филиал №7701 Банка ВТБ",
+        account: "40820810690009143221",
+        corrAccount: "30101810345250000745",
+        bik: "044525745",
+        passport: "P BLR MP2863171",
+        passportIssuer: "Московское РУВД г. Минска",
+        passportDate: "2011-03-12",
+        address: "пгт. Путилково, д. 15А",
+        taxStatus: "Налогоплательщик налога на профессиональный доход",
+        source: "Excel: сотрудл.xlsx"
+      },
+      "Софья": {
+        shortName: "Софья",
+        fullName: "Афанасьева Софья Алексеевна",
+        birthDate: "1995-08-21",
+        gender: "Женский",
+        citizenship: "РФ",
+        inn: "623401011283",
+        snils: "178-508-747 17",
+        bank: "Филиал №7701 Банка ВТБ",
+        account: "40817810809256050709",
+        corrAccount: "30101810345250000745",
+        bik: "044525745",
+        passport: "45 21 436946",
+        passportIssuer: "ГУ МВД РОССИИ ПО Г. МОСКВЕ",
+        passportDate: "2021-08-24",
+        address: "г. Москва, вн. тер. г. Муниципальный округ Хорошево-Мневники, ул. Нижние Мневники, д. 16К5, кв. 142",
+        taxStatus: "Налогоплательщик налога на профессиональный доход",
+        source: "Excel: сотрудл.xlsx"
+      },
+      "Асет": {
+        shortName: "Асет",
+        fullName: "Куандыков Асет Муратович",
+        birthDate: "1980-11-22",
+        gender: "Мужской",
+        citizenship: "РФ",
+        inn: "770101707921",
+        snils: "031-137-818 13",
+        bank: "ПАО Сбербанк",
+        account: "40817810738174874180",
+        corrAccount: "30101810400000000225",
+        bik: "044525225",
+        passport: "4525 475829",
+        passportIssuer: "ГУ МВД РОССИИ ПО ГОР. МОСКВЕ",
+        passportDate: "2025-12-24",
+        address: "г. Москва, ул. Озерная, д. 1, кв. 2",
+        taxStatus: "Налогоплательщик налога на профессиональный доход",
+        source: "Excel: сотрудл.xlsx"
+      }
+    };
     const MONTHS = [
       { id: "2026-06", title: "Июнь 2026" },
       { id: "2026-07", title: "Июль 2026" },
-      { id: "2026-08", title: "Август 2026" }
+      { id: "2026-08", title: "Август 2026" },
+      { id: "2026-09", title: "Сентябрь 2026" },
+      { id: "2026-10", title: "Октябрь 2026" },
+      { id: "2026-11", title: "Ноябрь 2026" }
     ];
     const TABS = [
       ...MONTHS,
@@ -974,7 +1156,10 @@
     const WEEK_STARTS = [
       "2026-06-01", "2026-06-08", "2026-06-15", "2026-06-22", "2026-06-29",
       "2026-07-06", "2026-07-13", "2026-07-20", "2026-07-27",
-      "2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31"
+      "2026-08-03", "2026-08-10", "2026-08-17", "2026-08-24", "2026-08-31",
+      "2026-09-07", "2026-09-14", "2026-09-21", "2026-09-28",
+      "2026-10-05", "2026-10-12", "2026-10-19", "2026-10-26",
+      "2026-11-02", "2026-11-09", "2026-11-16", "2026-11-23", "2026-11-30"
     ];
     const PAYMENT_STATUSES = {
       paid: { label: "оплачено", className: "status-paid" },
@@ -1544,11 +1729,16 @@
           .maybeSingle();
         if (error) throw error;
         if (data?.data) {
+          const rawVersion = Number(data.data.version || 0);
           state = normalizeState(data.data);
           addLog("Данные загружены из облака", "info", true);
           saveStateLocalOnly();
           lastCloudSync = formatSyncTime(data.updated_at);
           renderApp();
+          if (rawVersion < state.version) {
+            await saveCloudState({ showSuccess: false });
+            addLog("Данные обновлены до периода сентябрь-ноябрь 2026", "info", true);
+          }
           if (options.showSuccess) showToast("Данные загружены из облака");
         } else {
           const migrated = await loadLegacyCloudState();
@@ -1677,17 +1867,17 @@
         { time: created, level: "info", message: "Создано пустое состояние. Войдите и загрузите данные из Supabase." }
       ];
       if (warning) logs.push({ time: created, level: "warning", message: warning });
-      return normalizeState({ version: 8, shifts, logs, paymentStatuses: {}, requisites: { companies: {}, employees: {} } });
+      return normalizeState({ version: 9, shifts, logs, paymentStatuses: {}, requisites: { companies: {}, employees: {} } });
     }
 
     function normalizeState(rawState) {
-      const shifts = Array.isArray(rawState.shifts) ? rawState.shifts : generateDefaultShifts();
+      const shifts = ensureAutumn2026Shifts(Array.isArray(rawState.shifts) ? rawState.shifts : generateDefaultShifts());
       const companies = mergeDetails(DEFAULT_COMPANY_DETAILS, rawState.requisites?.companies);
       const employees = mergeDetails(DEFAULT_EMPLOYEE_DETAILS, rawState.requisites?.employees);
       applyCatalogFromState({ shifts, requisites: { companies, employees } });
       normalizeEmployeeContracts(employees, shifts);
       return {
-        version: 8,
+        version: 9,
         shifts,
         logs: Array.isArray(rawState.logs) ? rawState.logs : [],
         paymentStatuses: normalizePaymentStatuses(rawState.paymentStatuses),
@@ -1707,8 +1897,8 @@
         if (row.employee) employeeSet.add(row.employee);
         if (row.company) companySet.add(row.company);
       });
-      EMPLOYEES = [...employeeSet].sort((a, b) => a.localeCompare(b, "ru"));
-      COMPANIES = [...companySet].sort((a, b) => a.localeCompare(b, "ru"));
+      EMPLOYEES = sortCatalogItems([...employeeSet], DEFAULT_EMPLOYEE_ORDER);
+      COMPANIES = sortCatalogItems([...companySet], DEFAULT_COMPANY_ORDER);
       RATES = {};
       (source.shifts || []).forEach((row) => {
         if (row.company && Number.isFinite(Number(row.rate)) && RATES[row.company] === undefined) {
@@ -1716,7 +1906,7 @@
         }
       });
       COMPANIES.forEach((company) => {
-        if (RATES[company] === undefined) RATES[company] = 0;
+        if (RATES[company] === undefined) RATES[company] = DEFAULT_RATES[company] ?? 0;
       });
       EMPLOYEE_COMPANIES = {};
       EMPLOYEES.forEach((employee) => {
@@ -1737,8 +1927,26 @@
       COMPANY_DOCUMENT_SERIES = {};
       COMPANIES.forEach((company, index) => {
         const digit = String((index % 9) + 1);
-        COMPANY_DOCUMENT_SERIES[company] = digit + digit;
+        COMPANY_DOCUMENT_SERIES[company] = DEFAULT_COMPANY_DOCUMENT_SERIES[company] || digit + digit;
       });
+    }
+
+    function sortCatalogItems(items, preferredOrder) {
+      const order = new Map(preferredOrder.map((value, index) => [value, index]));
+      return [...items].sort((a, b) => {
+        const aIndex = order.has(a) ? order.get(a) : Number.MAX_SAFE_INTEGER;
+        const bIndex = order.has(b) ? order.get(b) : Number.MAX_SAFE_INTEGER;
+        if (aIndex !== bIndex) return aIndex - bIndex;
+        return a.localeCompare(b, "ru");
+      });
+    }
+
+    function compareCatalogOrder(a, b, preferredOrder) {
+      const order = new Map(preferredOrder.map((value, index) => [value, index]));
+      const aIndex = order.has(a) ? order.get(a) : Number.MAX_SAFE_INTEGER;
+      const bIndex = order.has(b) ? order.get(b) : Number.MAX_SAFE_INTEGER;
+      if (aIndex !== bIndex) return aIndex - bIndex;
+      return a.localeCompare(b, "ru");
     }
 
     function normalizePaymentStatuses(rawStatuses) {
@@ -1781,11 +1989,41 @@
     }
 
     function getGeneratedContractNumber(employee, company, shifts = state?.shifts || []) {
+      const firstDate = getFirstEmployeeCompanyShiftDate(employee, company, shifts) || getFirstEmployeeShiftDate(employee, shifts) || START_DATE;
+      if (usesCompanyDocumentNumbering("contract", company, firstDate)) {
+        const key = getDocumentKeyFromParts("contract", CONTRACT_YEAR, employee, company);
+        const allKeys = getContractDocumentKeysFromRows(shifts, company, true);
+        const index = allKeys.indexOf(key);
+        const sequence = index >= 0 ? index + 1 : shortHashNumber(key);
+        return formatShortDocumentNumber("contract", company, sequence, firstDate);
+      }
       const key = getDocumentKeyFromParts("contract", CONTRACT_YEAR, employee, company);
       const allKeys = getDocumentKeysFromRows(shifts, "contract", company);
       const index = allKeys.indexOf(key);
       const sequence = index >= 0 ? index + 1 : shortHashNumber(key);
-      return formatShortDocumentNumber("contract", company, sequence);
+      return formatShortDocumentNumber("contract", company, sequence, firstDate);
+    }
+
+    function getContractDocumentKeysFromRows(shifts, company, useNewNumbering) {
+      const pairs = new Map();
+      validRowsForMath(shifts)
+        .filter((row) => !company || row.company === company)
+        .forEach((row) => {
+          const pairKey = row.employee + "|" + row.company;
+          const current = pairs.get(pairKey);
+          if (!current || row.date < current.firstDate) {
+            pairs.set(pairKey, {
+              key: getDocumentKeyFromParts("contract", CONTRACT_YEAR, row.employee, row.company),
+              employee: row.employee,
+              company: row.company,
+              firstDate: row.date
+            });
+          }
+        });
+      return [...pairs.values()]
+        .filter((item) => usesCompanyDocumentNumbering("contract", item.company, item.firstDate) === useNewNumbering)
+        .sort((a, b) => a.firstDate.localeCompare(b.firstDate) || compareCatalogOrder(a.employee, b.employee, DEFAULT_EMPLOYEE_ORDER))
+        .map((item) => item.key);
     }
 
     function getDocumentKeysFromRows(shifts, docType, company) {
@@ -1841,7 +2079,184 @@
     }
 
     function generateDefaultShifts() {
-      return [];
+      return sortShifts([
+        ...generateSummer2026Shifts(),
+        ...generateAutumn2026Shifts()
+      ]);
+    }
+
+    function ensureAutumn2026Shifts(shifts) {
+      const planned = generateAutumn2026Shifts();
+      const existingIds = new Set(shifts.map((row) => row.id));
+      const existingEmployeeDates = new Set(
+        shifts
+          .filter((row) => row.date >= "2026-09-07" && row.date <= "2026-11-30")
+          .map((row) => row.employee + "|" + row.date)
+      );
+      const missing = planned.filter((row) => !existingIds.has(row.id) && !existingEmployeeDates.has(row.employee + "|" + row.date));
+      return missing.length ? sortShifts([...shifts, ...missing]) : shifts;
+    }
+
+    function generateSummer2026Shifts() {
+      const dayPatterns = getDefaultDayPatterns();
+      const weeklyCounts = getDefaultWeeklyCounts();
+      const employeeCompanies = {
+        "Денис": ["ЛЕА", "ОИА"],
+        "Софья": ["ЛЕА", "КАА"],
+        "Асет": ["КАА", "ОИА"]
+      };
+      const employeeStartDates = {
+        "Денис": "2026-06-05",
+        "Софья": "2026-06-17",
+        "Асет": "2026-06-25"
+      };
+      const firstPartialShifts = {
+        "Денис": [
+          { date: "2026-06-05", company: "ЛЕА", hours: 10 },
+          { date: "2026-06-06", company: "ОИА", hours: 12 },
+          { date: "2026-06-07", company: "ЛЕА", hours: 11 }
+        ],
+        "Софья": [
+          { date: "2026-06-17", company: "ЛЕА", hours: 11 },
+          { date: "2026-06-18", company: "КАА", hours: 12 },
+          { date: "2026-06-19", company: "КАА", hours: 10 },
+          { date: "2026-06-20", company: "ЛЕА", hours: 12 },
+          { date: "2026-06-21", company: "КАА", hours: 11 }
+        ],
+        "Асет": [
+          { date: "2026-06-25", company: "КАА", hours: 10 },
+          { date: "2026-06-26", company: "ОИА", hours: 11 },
+          { date: "2026-06-27", company: "КАА", hours: 12 },
+          { date: "2026-06-28", company: "КАА", hours: 10 }
+        ]
+      };
+      const shifts = [];
+      let id = 1;
+
+      Object.entries(firstPartialShifts).forEach(([employee, rows]) => {
+        rows.forEach((row) => {
+          shifts.push({
+            id: "s" + id++,
+            employee,
+            date: row.date,
+            company: row.company,
+            hours: row.hours,
+            rate: DEFAULT_RATES[row.company]
+          });
+        });
+      });
+
+      const activeWeekIndexByEmployee = Object.fromEntries(DEFAULT_EMPLOYEE_ORDER.map((employee) => [employee, 0]));
+      WEEK_STARTS
+        .filter((weekStart) => weekStart >= "2026-06-01" && weekStart <= "2026-08-24")
+        .forEach((weekStart) => {
+          DEFAULT_EMPLOYEE_ORDER.forEach((employee, employeeIndex) => {
+            if (employeeStartDates[employee] > weekStart) return;
+            const activeWeekIndex = activeWeekIndexByEmployee[employee]++;
+            const counts = weeklyCounts[employee][activeWeekIndex % weeklyCounts[employee].length];
+            const total = counts[0] + counts[1];
+            const patternList = dayPatterns[total];
+            const offsets = patternList[(activeWeekIndex + employeeIndex) % patternList.length];
+            const companies = employeeCompanies[employee];
+            const companySequence = buildCompanySequence(companies, counts, activeWeekIndex + employeeIndex);
+
+            offsets.forEach((offset, shiftIndex) => {
+              const date = toIso(addDays(parseIso(weekStart), offset));
+              const company = companySequence[shiftIndex];
+              shifts.push({
+                id: "s" + id++,
+                employee,
+                date,
+                company,
+                hours: 10 + ((activeWeekIndex + employeeIndex + shiftIndex * 2) % 3),
+                rate: DEFAULT_RATES[company]
+              });
+            });
+          });
+        });
+
+      DEFAULT_EMPLOYEE_ORDER.forEach((employee, index) => {
+        const company = employeeCompanies[employee][index % 2];
+        shifts.push({
+          id: "s" + id++,
+          employee,
+          date: "2026-08-31",
+          company,
+          hours: 10 + index,
+          rate: DEFAULT_RATES[company]
+        });
+      });
+
+      return sortShifts(shifts);
+    }
+
+    function generateAutumn2026Shifts() {
+      const dayPatterns = getDefaultDayPatterns();
+      const weeklyCounts = getDefaultWeeklyCounts();
+      const shifts = [];
+      const activeWeekIndexByEmployee = Object.fromEntries(DEFAULT_EMPLOYEE_ORDER.map((employee) => [employee, 0]));
+
+      WEEK_STARTS
+        .filter((weekStart) => weekStart >= "2026-09-07" && weekStart <= "2026-11-23")
+        .forEach((weekStart) => {
+          DEFAULT_EMPLOYEE_ORDER.forEach((employee, employeeIndex) => {
+            const activeWeekIndex = activeWeekIndexByEmployee[employee]++;
+            const counts = weeklyCounts[employee][activeWeekIndex % weeklyCounts[employee].length];
+            const total = counts[0] + counts[1];
+            const patternList = dayPatterns[total];
+            const offsets = patternList[(activeWeekIndex + employeeIndex) % patternList.length];
+            const companies = AUTUMN_2026_ASSIGNMENTS[employee];
+            const companySequence = buildCompanySequence(companies, counts, activeWeekIndex + employeeIndex);
+
+            offsets.forEach((offset, shiftIndex) => {
+              const date = toIso(addDays(parseIso(weekStart), offset));
+              const company = companySequence[shiftIndex];
+              shifts.push({
+                id: getAutumnShiftId(employee, date),
+                employee,
+                date,
+                company,
+                hours: 10 + ((activeWeekIndex + employeeIndex + shiftIndex * 2) % 3),
+                rate: DEFAULT_RATES[company]
+              });
+            });
+          });
+        });
+
+      DEFAULT_EMPLOYEE_ORDER.forEach((employee, index) => {
+        const company = AUTUMN_2026_ASSIGNMENTS[employee][index % 2];
+        shifts.push({
+          id: getAutumnShiftId(employee, "2026-11-30"),
+          employee,
+          date: "2026-11-30",
+          company,
+          hours: 10 + index,
+          rate: DEFAULT_RATES[company]
+        });
+      });
+
+      return sortShifts(shifts);
+    }
+
+    function getDefaultDayPatterns() {
+      return {
+        4: [[0, 1, 3, 5], [0, 2, 4, 6], [1, 2, 4, 5]],
+        5: [[0, 1, 2, 4, 6], [0, 1, 2, 3, 6], [0, 2, 3, 5, 6]],
+        6: [[0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 5, 6], [0, 1, 2, 4, 5, 6]]
+      };
+    }
+
+    function getDefaultWeeklyCounts() {
+      return {
+        "Денис": [[2, 3], [3, 2], [1, 3], [3, 2], [2, 4], [3, 1], [1, 4], [4, 1], [2, 3], [1, 5], [5, 1], [2, 4]],
+        "Софья": [[1, 4], [3, 1], [2, 3], [4, 2], [1, 5], [3, 2], [2, 4], [5, 1], [1, 3], [4, 1], [2, 3], [3, 1]],
+        "Асет": [[3, 2], [1, 5], [4, 1], [1, 3], [2, 4], [1, 4], [4, 2], [2, 3], [3, 1], [2, 4], [5, 1], [1, 3]]
+      };
+    }
+
+    function getAutumnShiftId(employee, date) {
+      const slugs = { "Денис": "denis", "Софья": "sofya", "Асет": "aset" };
+      return "a2026-" + (slugs[employee] || safeFileName(employee).toLowerCase()) + "-" + date.replaceAll("-", "");
     }
 
     function buildCompanySequence(companies, counts, seed) {
@@ -2128,6 +2543,7 @@
         ["okpo", "ОКПО"],
         ["okato", "ОКАТО"],
         ["oktmo", "ОКТМО"],
+        ["okved", "ОКВЭД"],
         ["bankInn", "ИНН банка"],
         ["bankKpp", "КПП банка"],
         ["signatory", "Подписант"],
@@ -2210,7 +2626,7 @@
             <strong>${escapeHtml(company)}</strong>
             <label>
               Номер договора
-              <input data-contract-employee="${escapeHtml(employee)}" data-contract-company="${escapeHtml(company)}" data-contract-field="number" type="text" maxlength="6" value="${escapeHtml(contract.number)}">
+              <input data-contract-employee="${escapeHtml(employee)}" data-contract-company="${escapeHtml(company)}" data-contract-field="number" type="text" maxlength="16" value="${escapeHtml(contract.number)}">
             </label>
             <label>
               Дата договора
@@ -2231,6 +2647,7 @@
       const rows = getSortedWeekSummaryRows();
       const body = rows.map((row) => {
         const missing = getDocumentMissingFields(row);
+        const actLabel = usesMonthlyActPeriod(row.weekStart) ? "Акт месяца" : "Акт";
         return `
           <div class="doc-row">
             <div>
@@ -2247,8 +2664,8 @@
               <button type="button" data-action="export-doc" data-format="pdf" data-doc="contract" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Договор PDF</button>
               <button type="button" data-action="export-doc" data-format="doc" data-doc="task" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">ТЗ DOC</button>
               <button type="button" data-action="export-doc" data-format="pdf" data-doc="task" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">ТЗ PDF</button>
-              <button type="button" data-action="export-doc" data-format="doc" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Акт DOC</button>
-              <button type="button" data-action="export-doc" data-format="pdf" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Акт PDF</button>
+              <button type="button" data-action="export-doc" data-format="doc" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">${escapeHtml(actLabel)} DOC</button>
+              <button type="button" data-action="export-doc" data-format="pdf" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">${escapeHtml(actLabel)} PDF</button>
               <button type="button" class="primary" data-action="export-doc" data-format="doc" data-doc="package" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Пакет DOC</button>
               <button type="button" class="primary" data-action="export-doc" data-format="pdf" data-doc="package" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Пакет PDF</button>
             </div>
@@ -2259,13 +2676,13 @@
         <div class="panel-head">
           <div>
             <div class="panel-title">Документы</div>
-            <div class="muted">рамочный договор на 2026 год, недельные ТЗ и акты</div>
+            <div class="muted">рамочный договор на 2026 год, недельные ТЗ и месячные акты с сентября</div>
           </div>
           <div class="panel-actions">
             <span class="badge info">${numberFormat.format(rows.length)} комплектов</span>
           </div>
         </div>
-        <div class="legal-note">Договор формируется как рамочный на 2026 год. Недельные ТЗ и акты фиксируют результат и стоимость; внутренние расчетные поля не включаются в документы как условие о графике или оплате времени.</div>
+        <div class="legal-note">Договор формируется как рамочный на 2026 год. ТЗ фиксируют недельный результат, а акты с 07.09.2026 формируются помесячно; внутренние расчетные поля не включаются в документы как условие о графике или оплате времени.</div>
         <div class="docs-list">${body || `<div class="empty">Нет данных для документов</div>`}</div>
       `;
     }
@@ -2418,7 +2835,7 @@
         details.contracts[company] = getDefaultContractDetails(employee, company, state.shifts);
       }
       if (field === "number") {
-        details.contracts[company].number = String(value).trim().slice(0, 6);
+        details.contracts[company].number = String(value).trim().slice(0, 16);
       }
       if (field === "date") {
         const fallback = getDefaultContractDetails(employee, company, state.shifts);
@@ -2546,7 +2963,7 @@
           return;
         }
         if (row.date < START_DATE || row.date > END_DATE) {
-          errors.push({ rowId: row.id, message: "Дата вне периода июнь-август 2026" });
+          errors.push({ rowId: row.id, message: "Дата вне периода июнь-ноябрь 2026" });
         }
         if (EMPLOYEE_START_DATES[row.employee] && row.date < EMPLOYEE_START_DATES[row.employee]) {
           errors.push({ rowId: row.id, message: `${row.employee}: смены не должны быть раньше ${formatDate(EMPLOYEE_START_DATES[row.employee])}` });
@@ -2584,9 +3001,9 @@
           if (rows.length < 4 || rows.length > 6) {
             errors.push({ rowId: "", message: `${employee}: за неделю ${getWeekLabel(weekStart)} должно быть 4-6 смен, сейчас ${rows.length}` });
           }
-          const allowedCompanies = EMPLOYEE_COMPANIES[employee];
+          const allowedCompanies = getEmployeeCompaniesForWeek(employee, weekStart);
           const companyCounts = allowedCompanies.map((company) => rows.filter((row) => row.company === company).length);
-          if (rows.length > 0 && companyCounts[0] === companyCounts[1]) {
+          if (allowedCompanies.length === 2 && rows.length > 0 && companyCounts[0] === companyCounts[1]) {
             errors.push({ rowId: "", message: `${employee}: за неделю ${getWeekLabel(weekStart)} смены по компаниям должны отличаться, сейчас ${allowedCompanies[0]} ${companyCounts[0]} и ${allowedCompanies[1]} ${companyCounts[1]}` });
           }
           const current = getCompanyDistribution(employee, weekStart);
@@ -2606,8 +3023,8 @@
           if (!contract.number) {
             errors.push({ rowId: "", message: `${label}: укажите номер договора в реквизитах сотрудника` });
           }
-          if (contract.number && contract.number.length > 6) {
-            errors.push({ rowId: "", message: `${label}: номер договора должен быть не длиннее 6 символов` });
+          if (contract.number && contract.number.length > 16) {
+            errors.push({ rowId: "", message: `${label}: номер договора должен быть не длиннее 16 символов` });
           }
           if (!isValidIsoDate(contract.date)) {
             errors.push({ rowId: "", message: `${label}: укажите корректную дату договора` });
@@ -2642,7 +3059,17 @@
           counts[row.company] += 1;
         }
       });
-      return EMPLOYEE_COMPANIES[employee].map((company) => company + ":" + counts[company]).join("|");
+      return getEmployeeCompaniesForWeek(employee, weekStart).map((company) => company + ":" + counts[company]).join("|");
+    }
+
+    function getEmployeeCompaniesForWeek(employee, weekStart) {
+      const rows = state.shifts.filter((row) => row.employee === employee && isValidIsoDate(row.date) && getWeekStart(row.date) === weekStart);
+      const companies = rows.map((row) => row.company).filter((company) => COMPANIES.includes(company));
+      if (companies.length) return sortCatalogItems([...new Set(companies)], DEFAULT_COMPANY_ORDER);
+      if (weekStart >= "2026-09-07" && weekStart <= "2026-11-30" && AUTUMN_2026_ASSIGNMENTS[employee]) {
+        return AUTUMN_2026_ASSIGNMENTS[employee];
+      }
+      return EMPLOYEE_COMPANIES[employee] || [];
     }
 
     function dedupeIssues(items) {
@@ -2836,18 +3263,28 @@
 
     function exportSingleDocument(docType, context) {
       const html = buildDocumentHtml(docType, context);
-      const periodSuffix = docType === "contract" ? CONTRACT_YEAR : context.weekStart;
-      const docNumber = docType === "contract" ? contractNumber(context) : getShortDocumentNumber(context, docType);
+      const periodSuffix = getDocumentPeriodSuffix(docType, context);
+      const docNumber = getDocumentNumberByType(docType, context);
       const fileName = `${docFilePrefix(docType)}_${safeFileName(docNumber)}_${periodSuffix}.doc`;
       downloadDoc(fileName, html);
     }
 
     function exportPdfDocument(docType, context) {
       const html = docType === "package" ? buildPdfPackageDocument(context) : buildDocumentHtml(docType, context);
-      const periodSuffix = docType === "contract" ? CONTRACT_YEAR : context.weekStart;
-      const docNumber = docType === "package" ? contractNumber(context) : (docType === "contract" ? contractNumber(context) : getShortDocumentNumber(context, docType));
+      const periodSuffix = docType === "package" ? getDocumentPeriodSuffix("contract", context) : getDocumentPeriodSuffix(docType, context);
+      const docNumber = docType === "package" ? contractNumber(context) : getDocumentNumberByType(docType, context);
       const fileName = `${docFilePrefix(docType)}_${safeFileName(docNumber)}_${periodSuffix}.pdf`;
       return openPdfPrintWindow(fileName, html);
+    }
+
+    function getDocumentNumberByType(docType, context) {
+      return docType === "contract" ? contractNumber(context) : getShortDocumentNumber(context, docType);
+    }
+
+    function getDocumentPeriodSuffix(docType, context) {
+      if (docType === "contract") return CONTRACT_YEAR;
+      if (docType === "act" && usesMonthlyActPeriod(context.weekStart)) return getMonthId(context.weekStart) || context.weekStart;
+      return context.weekStart;
     }
 
     function buildDocumentHtml(docType, context) {
@@ -2929,11 +3366,12 @@
     }
 
     function buildActDocument(context) {
+      const actContext = getActDocumentContext(context);
       const contractDate = getContractDate(context);
       return wrapDocumentHtml(`Акт ${documentNumber(context, "А")}`, `
         <h1>Акт оказанных услуг № ${escapeHtml(documentNumber(context, "А"))}</h1>
-        <p>г. Москва <span class="right">${escapeHtml(formatDate(context.weekEnd))}</span></p>
-        <p>${partyCompany(context.company)} и ${partyEmployee(context.employee)} составили настоящий акт о том, что Исполнитель оказал услуги по техническому заданию к договору № ${escapeHtml(contractNumber(context))} от ${escapeHtml(formatDate(contractDate))} за период ${escapeHtml(getWeekLabel(context.weekStart))}.</p>
+        <p>г. Москва <span class="right">${escapeHtml(formatDate(actContext.actPeriodEnd))}</span></p>
+        <p>${partyCompany(context.company)} и ${partyEmployee(context.employee)} составили настоящий акт о том, что Исполнитель оказал услуги по ${escapeHtml(actContext.actTaskLabel)} к договору № ${escapeHtml(contractNumber(context))} от ${escapeHtml(formatDate(contractDate))} за период ${escapeHtml(actContext.actPeriodLabel)}.</p>
         <h2>1. Результат оказанных услуг</h2>
         <p>Услуги оказаны в полном объеме, в установленные сроки и с надлежащим качеством. Исполнителем обеспечено:</p>
         <ul>
@@ -2944,10 +3382,10 @@
           <li>передача Заказчику отчетных документов по итогам периода.</li>
         </ul>
         <h2>2. Стоимость услуг</h2>
-        <p>Стоимость услуг за отчетный период составляет <strong>${escapeHtml(formatRub(context.summary.total))}</strong>, НДС не облагается.</p>
+        <p>Стоимость услуг за отчетный период составляет <strong>${escapeHtml(formatRub(actContext.summary.total))}</strong>, НДС не облагается.</p>
         <table>
           <thead><tr><th>Исполнитель</th><th>Период</th><th>Сумма</th></tr></thead>
-          <tbody><tr><td>${escapeHtml(context.employee.fullName)}</td><td>${escapeHtml(getWeekLabel(context.weekStart))}</td><td class="num">${escapeHtml(formatRub(context.summary.total))}</td></tr></tbody>
+          <tbody><tr><td>${escapeHtml(context.employee.fullName)}</td><td>${escapeHtml(actContext.actPeriodLabel)}</td><td class="num">${escapeHtml(formatRub(actContext.summary.total))}</td></tr></tbody>
         </table>
         <h2>3. Обязательства Исполнителя</h2>
         <p>Исполнитель обязуется сформировать и передать Заказчику чек по налогу на профессиональный доход на указанную сумму в течение 5 рабочих дней с даты подписания настоящего Акта.</p>
@@ -2956,6 +3394,39 @@
         <h2>5. Реквизиты и подписи</h2>
         ${requisitesTable(context)}
       `);
+    }
+
+    function getActDocumentContext(context) {
+      if (!usesMonthlyActPeriod(context.weekStart)) {
+        return {
+          ...context,
+          actPeriodStart: context.weekStart,
+          actPeriodEnd: context.weekEnd,
+          actPeriodLabel: getWeekLabel(context.weekStart),
+          actTaskLabel: "техническому заданию"
+        };
+      }
+      const monthId = getMonthId(context.weekStart);
+      const serviceRows = validRowsForMath(state.shifts)
+        .filter((row) => row.employee === context.summary.employee && row.company === context.summary.company && getMonthId(row.date) === monthId)
+        .sort((a, b) => a.date.localeCompare(b.date));
+      const summary = serviceRows.reduce((result, row) => {
+        result.shifts += 1;
+        result.hours += Number(row.hours || 0);
+        result.total += getDayAmount(row);
+        return result;
+      }, { ...context.summary, shifts: 0, hours: 0, total: 0 });
+      const actPeriodStart = monthId === getMonthId(NEW_NUMBERING_START_DATE) ? NEW_NUMBERING_START_DATE : getMonthStart(monthId);
+      const actPeriodEnd = getMonthEnd(monthId) > END_DATE ? END_DATE : getMonthEnd(monthId);
+      return {
+        ...context,
+        summary,
+        serviceRows,
+        actPeriodStart,
+        actPeriodEnd,
+        actPeriodLabel: `${formatDate(actPeriodStart)} - ${formatDate(actPeriodEnd)}`,
+        actTaskLabel: "техническим заданиям"
+      };
     }
 
     function wrapDocumentHtml(title, body) {
@@ -3095,23 +3566,30 @@
     function getShortDocumentNumber(context, docType) {
       const key = getDocumentKey(context, docType);
       const company = context.summary?.company || context.company?.alias || "";
-      const allKeys = getDocumentKeys(docType, company);
+      const sequenceDate = getDocumentSequenceDate(context, docType);
+      const allKeys = getDocumentKeys(docType, company, sequenceDate);
       const index = allKeys.indexOf(key);
       const sequence = index >= 0 ? index + 1 : shortHashNumber(key);
-      return formatShortDocumentNumber(docType, company, sequence);
+      return formatShortDocumentNumber(docType, company, sequence, sequenceDate);
     }
 
-    function formatShortDocumentNumber(docType, company, sequence) {
+    function formatShortDocumentNumber(docType, company, sequence, documentDate = "") {
+      if (usesCompanyDocumentNumbering(docType, company, documentDate)) {
+        return formatCompanyDocumentNumber(docType, company, sequence, documentDate);
+      }
       const prefix = { contract: "D", task: "T", act: "A" }[docType] || "X";
       const series = COMPANY_DOCUMENT_SERIES[company] || "00";
       return prefix + series + Number(sequence || 0).toString(36).toUpperCase().padStart(3, "0").slice(-3);
     }
 
-    function getDocumentKeys(docType, company) {
+    function getDocumentKeys(docType, company, sequenceDate = "") {
       const keys = new Set();
+      const useNewNumbering = usesCompanyDocumentNumbering(docType, company, sequenceDate);
       getWeekSummaryRows(false)
         .filter((row) => !company || row.company === company)
         .forEach((row) => {
+          const rowDate = getDocumentSequenceDateFromParts(docType, row.weekStart, row.employee, row.company);
+          if (!isSameDocumentNumberingSequence(docType, row.company, rowDate, useNewNumbering, sequenceDate)) return;
           keys.add(getDocumentKeyFromParts(docType, row.weekStart, row.employee, row.company));
         });
       return [...keys].sort();
@@ -3122,8 +3600,43 @@
     }
 
     function getDocumentKeyFromParts(docType, weekStart, employee, company) {
-      const period = docType === "contract" ? CONTRACT_YEAR : weekStart;
+      const period = docType === "contract" ? CONTRACT_YEAR : (docType === "act" && usesMonthlyActPeriod(weekStart) ? getMonthId(weekStart) : weekStart);
       return [docType, period, employee, company].join("|");
+    }
+
+    function getDocumentSequenceDate(context, docType) {
+      if (docType === "contract") return getContractDate(context);
+      return context.weekStart;
+    }
+
+    function getDocumentSequenceDateFromParts(docType, weekStart, employee, company) {
+      if (docType === "contract") return getFirstEmployeeCompanyShiftDate(employee, company) || START_DATE;
+      return weekStart;
+    }
+
+    function isSameDocumentNumberingSequence(docType, company, rowDate, useNewNumbering, sequenceDate) {
+      if (usesCompanyDocumentNumbering(docType, company, rowDate) !== useNewNumbering) return false;
+      const rule = COMPANY_DOCUMENT_NUMBERING[company]?.[docType];
+      if (useNewNumbering && rule?.includeMonth) {
+        return getMonthId(rowDate) === getMonthId(sequenceDate);
+      }
+      return true;
+    }
+
+    function usesCompanyDocumentNumbering(docType, company, documentDate) {
+      return Boolean(COMPANY_DOCUMENT_NUMBERING[company]?.[docType] && documentDate >= NEW_NUMBERING_START_DATE);
+    }
+
+    function usesMonthlyActPeriod(weekStart) {
+      return weekStart >= NEW_NUMBERING_START_DATE;
+    }
+
+    function formatCompanyDocumentNumber(docType, company, sequence, documentDate) {
+      const rule = COMPANY_DOCUMENT_NUMBERING[company]?.[docType];
+      if (!rule) return String(sequence || "");
+      const number = String(Number(sequence || 0));
+      const month = rule.includeMonth ? getMonthNumber(documentDate) : "";
+      return `${rule.prefix || ""}${month}${number}`;
     }
 
     function shortHashNumber(value) {
@@ -3283,10 +3796,28 @@
       return toIso(addDays(date, offset));
     }
 
+    function getMonthId(iso) {
+      return isValidIsoDate(iso) ? iso.slice(0, 7) : "";
+    }
+
+    function getMonthNumber(iso) {
+      return getMonthId(iso).slice(5, 7);
+    }
+
+    function getMonthStart(monthId) {
+      return /^\d{4}-\d{2}$/.test(String(monthId)) ? monthId + "-01" : "";
+    }
+
+    function getMonthEnd(monthId) {
+      if (!/^\d{4}-\d{2}$/.test(String(monthId))) return "";
+      const [year, month] = monthId.split("-").map(Number);
+      return toIso(new Date(Date.UTC(year, month, 0)));
+    }
+
     function isFullWeek(weekStart) {
       if (!isValidIsoDate(weekStart)) return false;
       const weekEnd = toIso(addDays(parseIso(weekStart), 6));
-      return weekStart >= START_DATE && weekEnd <= END_DATE;
+      return weekStart >= START_DATE && weekEnd <= END_DATE && !PARTIAL_WEEK_STARTS.has(weekStart);
     }
 
     function isEmployeeActiveFullWeek(employee, weekStart) {
