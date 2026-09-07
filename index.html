@@ -2647,7 +2647,6 @@
       const rows = getSortedWeekSummaryRows();
       const body = rows.map((row) => {
         const missing = getDocumentMissingFields(row);
-        const actLabel = usesMonthlyActPeriod(row.weekStart) ? "Акт месяца" : "Акт";
         return `
           <div class="doc-row">
             <div>
@@ -2664,8 +2663,8 @@
               <button type="button" data-action="export-doc" data-format="pdf" data-doc="contract" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Договор PDF</button>
               <button type="button" data-action="export-doc" data-format="doc" data-doc="task" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">ТЗ DOC</button>
               <button type="button" data-action="export-doc" data-format="pdf" data-doc="task" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">ТЗ PDF</button>
-              <button type="button" data-action="export-doc" data-format="doc" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">${escapeHtml(actLabel)} DOC</button>
-              <button type="button" data-action="export-doc" data-format="pdf" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">${escapeHtml(actLabel)} PDF</button>
+              <button type="button" data-action="export-doc" data-format="doc" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Акт DOC</button>
+              <button type="button" data-action="export-doc" data-format="pdf" data-doc="act" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Акт PDF</button>
               <button type="button" class="primary" data-action="export-doc" data-format="doc" data-doc="package" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Пакет DOC</button>
               <button type="button" class="primary" data-action="export-doc" data-format="pdf" data-doc="package" data-week="${escapeHtml(row.weekStart)}" data-employee="${escapeHtml(row.employee)}" data-company="${escapeHtml(row.company)}">Пакет PDF</button>
             </div>
@@ -2676,13 +2675,13 @@
         <div class="panel-head">
           <div>
             <div class="panel-title">Документы</div>
-            <div class="muted">рамочный договор на 2026 год, недельные ТЗ и месячные акты с сентября</div>
+            <div class="muted">рамочный договор на 2026 год, недельные ТЗ и акты</div>
           </div>
           <div class="panel-actions">
             <span class="badge info">${numberFormat.format(rows.length)} комплектов</span>
           </div>
         </div>
-        <div class="legal-note">Договор формируется как рамочный на 2026 год. ТЗ фиксируют недельный результат, а акты с 07.09.2026 формируются помесячно; внутренние расчетные поля не включаются в документы как условие о графике или оплате времени.</div>
+        <div class="legal-note">Договор формируется как рамочный на 2026 год. Недельные ТЗ и акты фиксируют результат и стоимость; внутренние расчетные поля не включаются в документы как условие о графике или оплате времени.</div>
         <div class="docs-list">${body || `<div class="empty">Нет данных для документов</div>`}</div>
       `;
     }
@@ -3283,7 +3282,6 @@
 
     function getDocumentPeriodSuffix(docType, context) {
       if (docType === "contract") return CONTRACT_YEAR;
-      if (docType === "act" && usesMonthlyActPeriod(context.weekStart)) return getMonthId(context.weekStart) || context.weekStart;
       return context.weekStart;
     }
 
@@ -3366,12 +3364,11 @@
     }
 
     function buildActDocument(context) {
-      const actContext = getActDocumentContext(context);
       const contractDate = getContractDate(context);
       return wrapDocumentHtml(`Акт ${documentNumber(context, "А")}`, `
         <h1>Акт оказанных услуг № ${escapeHtml(documentNumber(context, "А"))}</h1>
-        <p>г. Москва <span class="right">${escapeHtml(formatDate(actContext.actPeriodEnd))}</span></p>
-        <p>${partyCompany(context.company)} и ${partyEmployee(context.employee)} составили настоящий акт о том, что Исполнитель оказал услуги по ${escapeHtml(actContext.actTaskLabel)} к договору № ${escapeHtml(contractNumber(context))} от ${escapeHtml(formatDate(contractDate))} за период ${escapeHtml(actContext.actPeriodLabel)}.</p>
+        <p>г. Москва <span class="right">${escapeHtml(formatDate(context.weekEnd))}</span></p>
+        <p>${partyCompany(context.company)} и ${partyEmployee(context.employee)} составили настоящий акт о том, что Исполнитель оказал услуги по техническому заданию к договору № ${escapeHtml(contractNumber(context))} от ${escapeHtml(formatDate(contractDate))} за период ${escapeHtml(getWeekLabel(context.weekStart))}.</p>
         <h2>1. Результат оказанных услуг</h2>
         <p>Услуги оказаны в полном объеме, в установленные сроки и с надлежащим качеством. Исполнителем обеспечено:</p>
         <ul>
@@ -3382,10 +3379,10 @@
           <li>передача Заказчику отчетных документов по итогам периода.</li>
         </ul>
         <h2>2. Стоимость услуг</h2>
-        <p>Стоимость услуг за отчетный период составляет <strong>${escapeHtml(formatRub(actContext.summary.total))}</strong>, НДС не облагается.</p>
+        <p>Стоимость услуг за отчетный период составляет <strong>${escapeHtml(formatRub(context.summary.total))}</strong>, НДС не облагается.</p>
         <table>
           <thead><tr><th>Исполнитель</th><th>Период</th><th>Сумма</th></tr></thead>
-          <tbody><tr><td>${escapeHtml(context.employee.fullName)}</td><td>${escapeHtml(actContext.actPeriodLabel)}</td><td class="num">${escapeHtml(formatRub(actContext.summary.total))}</td></tr></tbody>
+          <tbody><tr><td>${escapeHtml(context.employee.fullName)}</td><td>${escapeHtml(getWeekLabel(context.weekStart))}</td><td class="num">${escapeHtml(formatRub(context.summary.total))}</td></tr></tbody>
         </table>
         <h2>3. Обязательства Исполнителя</h2>
         <p>Исполнитель обязуется сформировать и передать Заказчику чек по налогу на профессиональный доход на указанную сумму в течение 5 рабочих дней с даты подписания настоящего Акта.</p>
@@ -3394,39 +3391,6 @@
         <h2>5. Реквизиты и подписи</h2>
         ${requisitesTable(context)}
       `);
-    }
-
-    function getActDocumentContext(context) {
-      if (!usesMonthlyActPeriod(context.weekStart)) {
-        return {
-          ...context,
-          actPeriodStart: context.weekStart,
-          actPeriodEnd: context.weekEnd,
-          actPeriodLabel: getWeekLabel(context.weekStart),
-          actTaskLabel: "техническому заданию"
-        };
-      }
-      const monthId = getMonthId(context.weekStart);
-      const serviceRows = validRowsForMath(state.shifts)
-        .filter((row) => row.employee === context.summary.employee && row.company === context.summary.company && getMonthId(row.date) === monthId)
-        .sort((a, b) => a.date.localeCompare(b.date));
-      const summary = serviceRows.reduce((result, row) => {
-        result.shifts += 1;
-        result.hours += Number(row.hours || 0);
-        result.total += getDayAmount(row);
-        return result;
-      }, { ...context.summary, shifts: 0, hours: 0, total: 0 });
-      const actPeriodStart = monthId === getMonthId(NEW_NUMBERING_START_DATE) ? NEW_NUMBERING_START_DATE : getMonthStart(monthId);
-      const actPeriodEnd = getMonthEnd(monthId) > END_DATE ? END_DATE : getMonthEnd(monthId);
-      return {
-        ...context,
-        summary,
-        serviceRows,
-        actPeriodStart,
-        actPeriodEnd,
-        actPeriodLabel: `${formatDate(actPeriodStart)} - ${formatDate(actPeriodEnd)}`,
-        actTaskLabel: "техническим заданиям"
-      };
     }
 
     function wrapDocumentHtml(title, body) {
@@ -3600,7 +3564,7 @@
     }
 
     function getDocumentKeyFromParts(docType, weekStart, employee, company) {
-      const period = docType === "contract" ? CONTRACT_YEAR : (docType === "act" && usesMonthlyActPeriod(weekStart) ? getMonthId(weekStart) : weekStart);
+      const period = docType === "contract" ? CONTRACT_YEAR : weekStart;
       return [docType, period, employee, company].join("|");
     }
 
@@ -3625,10 +3589,6 @@
 
     function usesCompanyDocumentNumbering(docType, company, documentDate) {
       return Boolean(COMPANY_DOCUMENT_NUMBERING[company]?.[docType] && documentDate >= NEW_NUMBERING_START_DATE);
-    }
-
-    function usesMonthlyActPeriod(weekStart) {
-      return weekStart >= NEW_NUMBERING_START_DATE;
     }
 
     function formatCompanyDocumentNumber(docType, company, sequence, documentDate) {
