@@ -940,6 +940,7 @@
     const CONTRACT_YEAR = "2026";
     const CONTRACT_END_DATE = "2026-12-31";
     const STORAGE_KEY = "self-employed-shifts-jja-2026-v4";
+    const STATE_VERSION = 10;
     const NEW_NUMBERING_START_DATE = "2026-09-07";
     const DEFAULT_EMPLOYEE_ORDER = ["Денис", "Софья", "Асет"];
     const DEFAULT_COMPANY_ORDER = ["ЛЕА", "ОИА", "КАА", "КСВ"];
@@ -965,7 +966,7 @@
     };
     const AUTUMN_2026_ASSIGNMENTS = {
       "Денис": ["КАА", "КСВ"],
-      "Софья": ["КСВ", "КАА"],
+      "Софья": ["КСВ", "ОИА"],
       "Асет": ["ЛЕА", "КСВ"]
     };
     const PARTIAL_WEEK_STARTS = new Set(["2026-08-31", "2026-11-30"]);
@@ -1746,7 +1747,7 @@
           renderApp();
           if (rawVersion < state.version) {
             await saveCloudState({ showSuccess: false });
-            addLog("Данные обновлены до периода сентябрь-ноябрь 2026", "info", true);
+            addLog("Данные обновлены до актуальной версии расписания", "info", true);
           }
           if (options.showSuccess) showToast("Данные загружены из облака");
         } else {
@@ -1876,17 +1877,19 @@
         { time: created, level: "info", message: "Создано пустое состояние. Войдите и загрузите данные из Supabase." }
       ];
       if (warning) logs.push({ time: created, level: "warning", message: warning });
-      return normalizeState({ version: 9, shifts, logs, paymentStatuses: {}, requisites: { companies: {}, employees: {} } });
+      return normalizeState({ version: STATE_VERSION, shifts, logs, paymentStatuses: {}, requisites: { companies: {}, employees: {} } });
     }
 
     function normalizeState(rawState) {
-      const shifts = ensureAutumn2026Shifts(Array.isArray(rawState.shifts) ? rawState.shifts : generateDefaultShifts());
+      const rawVersion = Number(rawState.version || 0);
+      const sourceShifts = Array.isArray(rawState.shifts) ? rawState.shifts : generateDefaultShifts();
+      const shifts = ensureSofyaAutumnOiaAssignment(ensureAutumn2026Shifts(sourceShifts), rawVersion);
       const companies = mergeDetails(DEFAULT_COMPANY_DETAILS, rawState.requisites?.companies);
       const employees = mergeDetails(DEFAULT_EMPLOYEE_DETAILS, rawState.requisites?.employees);
       applyCatalogFromState({ shifts, requisites: { companies, employees } });
       normalizeEmployeeContracts(employees, shifts);
       return {
-        version: 9,
+        version: STATE_VERSION,
         shifts,
         logs: Array.isArray(rawState.logs) ? rawState.logs : [],
         paymentStatuses: normalizePaymentStatuses(rawState.paymentStatuses),
@@ -2104,6 +2107,19 @@
       );
       const missing = planned.filter((row) => !existingIds.has(row.id) && !existingEmployeeDates.has(row.employee + "|" + row.date));
       return missing.length ? sortShifts([...shifts, ...missing]) : shifts;
+    }
+
+    function ensureSofyaAutumnOiaAssignment(shifts, rawVersion) {
+      if (rawVersion >= STATE_VERSION) return shifts;
+      let changed = false;
+      const migrated = shifts.map((row) => {
+        if (row.employee !== "Софья" || row.company !== "КАА" || row.date < "2026-09-07" || row.date > "2026-11-30") {
+          return row;
+        }
+        changed = true;
+        return { ...row, company: "ОИА", rate: DEFAULT_RATES["ОИА"] };
+      });
+      return changed ? sortShifts(migrated) : shifts;
     }
 
     function generateSummer2026Shifts() {
